@@ -1,0 +1,704 @@
+/**
+ * ********************************************************************************************************************************************************************************
+ * @file    ef_test_driver.c
+ * @ingroup GroupeFATTest
+ * @author  SAG Application Team
+ * @version V1.0.0
+ * @date    04-04-2019
+ * @brief   Test functions for testing sdcard functionalities
+ *
+ * ********************************************************************************************************************************************************************************
+ */
+
+/* START OF FILE *************************************************************************************************** */
+/* ***************************************************************************************************************** */
+
+/* Includes -------------------------------------------------------------------------------------------------------- */
+#include <stdio.h>
+#include <string.h>
+
+#include "efat.h"
+
+#include "ef_prv_drive.h"
+#include "ef_test_driver.h"
+/* Local constant macros ------------------------------------------------------------------------------------------- */
+/**
+ *  @Brief  Size of message handled
+*/
+#define DEBUG_STRING_SIZE ( 100 )
+
+/* Local function macros ------------------------------------------------------------------------------------------- */
+/* Local typedefs, structures, unions and enums -------------------------------------------------------------------- */
+/* Local variables ------------------------------------------------------------------------------------------------- */
+/* Public variables ------------------------------------------------------------------------------------------------ */
+/* Local function prototypes---------------------------------------------------------------------------------------- */
+/**
+ * @brief Pseudo random number generator
+ *
+ *  @param  pns   0:Initialize, !0:Read
+ *
+ *  @return The pseudo random number generated
+ */
+static ef_u32_t u32PseudoRandomGenerator ( ef_u32_t u32pns );
+
+/* Local functions ------------------------------------------------------------------------------------------------- */
+static ef_u32_t u32PseudoRandomGenerator (
+  ef_u32_t pns
+)
+{
+  static ef_u32_t u32lfsr;
+
+  if ( 0 != pns )
+  {
+    u32lfsr = pns;
+    for (ef_u32_t n = 0 ; n < 32 ; n++ )
+    {
+      u32PseudoRandomGenerator( 0 );
+    }
+  }
+  if ( 0 != ( u32lfsr & 0x00000001 ) )
+  {
+    u32lfsr >>= 1;
+    u32lfsr ^= 0x80200003;
+  }
+  else
+  {
+    u32lfsr >>= 1;
+  }
+  return u32lfsr;
+}
+
+/* Public functions ------------------------------------------------------------------------------------------------ */
+
+int32_t s32TestSdCardDiskIO (
+  ef_u08_t   u8PhyDrvNb,	  /* Physical drive number to be checked (all data on the drive will be lost) */
+  ef_uXX_t      uiCycles,		  /* Number of test cycles */
+  ef_u08_t * pu8Buffer,	  /* Pointer to the working buffer */
+  ef_uXX_t      uiBufferSize	/* Size of the working buffer in unit of byte */
+)
+{
+  ef_u32_t	n;
+  ef_u32_t	cc;
+  ef_u32_t	ns;
+  ef_u32_t	sz_drv;
+  ef_u32_t	lba;
+  ef_u32_t	lba2;
+  ef_u32_t	sz_eblk;
+  ef_u32_t	pns = 1;
+  ef_u16_t	sz_sect;
+  ef_u08_t *	pbuff = (ef_u08_t*) pu8Buffer;
+  ef_u08_t		u8DiskRetVal;
+  int32_t   s32RetVal = 0;
+  char		  cBuffer[ DEBUG_STRING_SIZE ];
+
+  snprintf( cBuffer,
+            DEBUG_STRING_SIZE,
+            "test_diskio(%u, %u, 0x%08X, 0x%08X)\r\n",
+            u8PhyDrvNb,
+            uiCycles,
+            (unsigned int) pu8Buffer,
+            (unsigned int) uiBufferSize );
+  printf( cBuffer );
+
+  if ( uiBufferSize < EF_CONF_SS_MAX + 8 )
+  {
+    printf( "Insufficient work area to run the program.\r\n" );
+    s32RetVal = 1;
+    break;
+  }
+
+  for ( cc = 1 ; cc <= uiCycles ; cc++ )
+  {
+    snprintf( cBuffer, DEBUG_STRING_SIZE,  "**** Test cycle %lu of %lu start ****\r\n", cc, uiCycles );
+    printf( cBuffer );
+
+    snprintf( cBuffer, DEBUG_STRING_SIZE,  " disk_initalize(%u)", u8PhyDrvNb );
+    printf( cBuffer );
+    u8DiskRetVal =  u8EFPrvDriveInitialize( u8PhyDrvNb );
+    if ( 0 != ( u8DiskRetVal & EF_DISK_RET_NOINIT ) )
+    {
+      printf( " - failed.\r\n" );
+      return 2;
+      s32RetVal = 2;
+      break;
+    }
+    else
+    {
+      printf( " - ok.\r\n" );
+    }
+
+			printf( "**** Get drive size ****\r\n" );
+			snprintf( cBuffer, DEBUG_STRING_SIZE,  "  u8EFPrvDriveIOCtrl(%u, GET_SECTOR_COUNT, 0x%08X)", u8PhyDrvNb, (unsigned int) &sz_drv );
+			printf( cBuffer );
+        sz_drv = 0;
+        u8DiskRetVal =  u8EFPrvDriveIOCtrl( u8PhyDrvNb, GET_SECTOR_COUNT, &sz_drv );
+        if ( EF_DISK_RET_OK == u8DiskRetVal )
+        {
+         	printf( " - ok.\r\n" );
+        }
+        else
+        {
+         	printf( " - failed.\r\n" );
+          return 3;
+        }
+        if ( 128 > sz_drv )
+        {
+         	printf( "Failed: Insufficient drive size to test.\r\n" );
+          return 4;
+        }
+      	snprintf( cBuffer, DEBUG_STRING_SIZE,  " Number of sectors on the drive %u is %lu.\r\n", u8PhyDrvNb, sz_drv );
+
+#if EF_CONF_SS_MAX != EF_CONF_SS_MIN
+			printf( "**** Get sector size ****\r\n" );
+			snprintf( cBuffer, DEBUG_STRING_SIZE,  "  u8EFPrvDriveIOCtrl(%u, GET_SECTOR_SIZE, 0x%X)", u8PhyDrvNb, (ef_u32_t)&sz_sect );
+			printf( cBuffer );
+        sz_sect = 0;
+        u8DiskRetVal =  u8EFPrvDriveIOCtrl( u8PhyDrvNb, GET_SECTOR_SIZE, &sz_sect );
+        if ( EF_DISK_RET_OK == u8DiskRetVal )
+        {
+            	printf( " - ok.\r\n" );
+        }
+        else
+        {
+            	printf( " - failed.\r\n" );
+          return 5;
+        }
+			snprintf( cBuffer, DEBUG_STRING_SIZE,  " Size of sector is %u bytes.\r\n", sz_sect );
+			printf( cBuffer );
+#else
+        sz_sect = EF_CONF_SS_MAX;
+#endif
+
+			printf( "**** Get block size ****\r\n" );
+			snprintf( cBuffer, DEBUG_STRING_SIZE,  "  u8EFPrvDriveIOCtrl(%u, GET_BLOCK_SIZE, 0x%X)", u8PhyDrvNb, (unsigned int) &sz_eblk );
+			printf( cBuffer );
+        sz_eblk = 0;
+        u8DiskRetVal =  u8EFPrvDriveIOCtrl( u8PhyDrvNb, GET_BLOCK_SIZE, &sz_eblk );
+        if ( EF_DISK_RET_OK == u8DiskRetVal )
+        {
+         	printf( " - ok.\r\n" );
+        }
+        else
+        {
+          printf( " - failed.\r\n" );
+        }
+        if ( ( EF_DISK_RET_OK == u8DiskRetVal ) || ( 2 <= sz_eblk ) )
+        {
+				snprintf( cBuffer, DEBUG_STRING_SIZE,  " Size of the erase block is %lu sectors.\r\n", sz_eblk );
+				printf( cBuffer );
+        }
+        else
+        {
+         	printf( " Size of the erase block is unknown.\r\n" );
+        }
+
+        /* Single sector write test */
+       	printf( "**** Single sector write test ****\r\n" );
+        lba = 0;
+        for ( n = 0 , u32PseudoRandomGenerator(pns) ; n < sz_sect ; n++ )
+        {
+        	pbuff[n] = (ef_u08_t)u32PseudoRandomGenerator(0);
+        }
+			snprintf( cBuffer, DEBUG_STRING_SIZE,  "  u8EFPrvDriveWrite(%u, 0x%X, %lu, 1)", u8PhyDrvNb, (unsigned int) pbuff, lba );
+			printf( cBuffer );
+        u8DiskRetVal =  u8EFPrvDriveWrite( u8PhyDrvNb, pbuff, lba, 1 );
+        if ( EF_DISK_RET_OK == u8DiskRetVal )
+        {
+				printf( " - ok.\r\n" );
+        }
+        else
+        {
+            	printf( " - failed.\r\n" );
+            return 6;
+        }
+			snprintf( cBuffer, DEBUG_STRING_SIZE,  "  u8EFPrvDriveIOCtrl(%u, CTRL_SYNC, NULL)", u8PhyDrvNb );
+			printf( cBuffer );
+        u8DiskRetVal =  u8EFPrvDriveIOCtrl( u8PhyDrvNb, CTRL_SYNC, 0 );
+        if ( EF_DISK_RET_OK == u8DiskRetVal )
+        {
+         	printf( " - ok.\r\n" );
+        }
+        else
+        {
+         	printf( " - failed.\r\n" );
+          return 7;
+        }
+        memset(pbuff, 0, sz_sect);
+			snprintf( cBuffer, DEBUG_STRING_SIZE,  "  u8EFPrvDriveRead(%u, 0x%X, %lu, 1)", u8PhyDrvNb, (unsigned int) pbuff, lba );
+			printf( cBuffer );
+        u8DiskRetVal =  u8EFPrvDriveRead( u8PhyDrvNb, pbuff, lba, 1 );
+        if ( EF_DISK_RET_OK == u8DiskRetVal )
+        {
+         	printf( " - ok.\r\n" );
+        }
+        else
+        {
+         	printf( " - failed.\r\n" );
+          return 8;
+        }
+        for ( n = 0, u32PseudoRandomGenerator(pns) ; n < sz_sect && pbuff[n] == (ef_u08_t)u32PseudoRandomGenerator(0) ; n++ ) ;
+        if ( n == sz_sect )
+        {
+         	printf( " Read data matched.\r\n" );
+        }
+        else
+        {
+         	printf( " Read data differs from the data written.\r\n" );
+          return 10;
+        }
+        pns++;
+
+        printf( "**** Multiple sector write test ****\r\n" );
+        lba = 5; ns = uiBufferSize / sz_sect;
+        if (ns > 4)
+        {
+        	ns = 4;
+        }
+        if (ns > 1)
+        {
+            for (n = 0, u32PseudoRandomGenerator(pns); n < (ef_u32_t)(sz_sect * ns); n++)
+            {
+            	pbuff[n] = (ef_u08_t)u32PseudoRandomGenerator(0);
+            }
+ 				snprintf( cBuffer, DEBUG_STRING_SIZE,  "  u8EFPrvDriveWrite(%u, 0x%X, %lu, %lu)", u8PhyDrvNb, (unsigned int) pbuff, lba, ns);
+				printf( cBuffer );
+            u8DiskRetVal =  u8EFPrvDriveWrite(u8PhyDrvNb, pbuff, lba, ns);
+            if ( EF_DISK_RET_OK == u8DiskRetVal )
+            {
+                	printf( " - ok.\r\n" );
+            }
+            else
+            {
+                	printf( " - failed.\r\n" );
+                return 11;
+            }
+				snprintf( cBuffer, DEBUG_STRING_SIZE,  "  u8EFPrvDriveIOCtrl(%u, CTRL_SYNC, NULL)", u8PhyDrvNb);
+				printf( cBuffer );
+             u8DiskRetVal =  u8EFPrvDriveIOCtrl(u8PhyDrvNb, CTRL_SYNC, 0);
+            if ( EF_DISK_RET_OK == u8DiskRetVal )
+            {
+                	printf( " - ok.\r\n" );
+            }
+            else
+            {
+                	printf( " - failed.\r\n" );
+                return 12;
+            }
+            memset(pbuff, 0, sz_sect * ns);
+            snprintf( cBuffer, DEBUG_STRING_SIZE,  "  u8EFPrvDriveRead(%u, 0x%X, %lu, %lu)", u8PhyDrvNb, (unsigned int) pbuff, lba, ns);
+            printf( cBuffer );
+            u8DiskRetVal =  u8EFPrvDriveRead(u8PhyDrvNb, pbuff, lba, ns);
+            if ( EF_DISK_RET_OK == u8DiskRetVal )
+            {
+                 	printf( " - ok.\r\n" );
+            }
+            else
+            {
+                	printf( " - failed.\r\n" );
+                return 13;
+            }
+            for (n = 0, u32PseudoRandomGenerator(pns); n < (ef_u32_t)(sz_sect * ns) && pbuff[n] == (ef_u08_t)u32PseudoRandomGenerator(0); n++) ;
+            if (n == (ef_u32_t)(sz_sect * ns))
+            {
+                 	printf( " Read data matched.\r\n" );
+             }
+            else
+            {
+            	printf( " Read data differs from the data written.\r\n" );
+                return 14;
+            }
+        }
+        else
+        {
+            	printf( " Test skipped.\r\n" );
+         }
+        pns++;
+
+      	printf( "**** Single sector write test (unaligned buffer address) ****\r\n" );
+        lba = 5;
+        for ( n = 0, u32PseudoRandomGenerator(pns) ; n < sz_sect ; n++ )
+        {
+        	pbuff[n+3] = (ef_u08_t)u32PseudoRandomGenerator(0);
+        }
+        	snprintf( cBuffer, DEBUG_STRING_SIZE,  "  u8EFPrvDriveWrite(%u, 0x%X, %lu, 1)", u8PhyDrvNb, (unsigned int) (pbuff+3), lba );
+        	printf( cBuffer );
+
+    u8DiskRetVal =  u8EFPrvDriveWrite( u8PhyDrvNb, pbuff+3, lba, 1 );
+        if ( EF_DISK_RET_OK == u8DiskRetVal )
+        {
+            	printf( " - ok.\r\n" );
+        }
+        else
+        {
+            	printf( " - failed.\r\n" );
+            return 15;
+        }
+        	snprintf( cBuffer, DEBUG_STRING_SIZE,  "  u8EFPrvDriveIOCtrl(%u, CTRL_SYNC, NULL)", u8PhyDrvNb );
+        	printf( cBuffer );
+        u8DiskRetVal =  u8EFPrvDriveIOCtrl( u8PhyDrvNb, CTRL_SYNC, 0 );
+        if ( EF_DISK_RET_OK == u8DiskRetVal )
+        {
+             	printf( " - ok.\r\n" );
+        }
+        else
+        {
+            	printf( " - failed.\r\n" );
+            return 16;
+        }
+        memset(pbuff+5, 0, sz_sect);
+        	snprintf( cBuffer, DEBUG_STRING_SIZE,  "  u8EFPrvDriveRead(%u, 0x%X, %lu, 1)", u8PhyDrvNb, (unsigned int) (pbuff+5), lba );
+        	printf( cBuffer );
+        u8DiskRetVal =  u8EFPrvDriveRead( u8PhyDrvNb, pbuff+5, lba, 1 );
+        if ( EF_DISK_RET_OK == u8DiskRetVal )
+        {
+            	printf( " - ok.\r\n" );
+        }
+        else
+        {
+        	printf( " - failed.\r\n" );
+          return 17;
+        }
+        for ( n = 0, u32PseudoRandomGenerator(pns) ; n < sz_sect && pbuff[n+5] == (ef_u08_t)u32PseudoRandomGenerator(0) ; n++ ) ;
+        if ( n == sz_sect )
+        {
+         	printf( " Read data matched.\r\n" );
+        }
+        else
+        {
+        	printf( " Read data differs from the data written.\r\n" );
+          return 18;
+        }
+        pns++;
+
+       	printf( "**** 4GB barrier test ****\r\n" );
+        if ( sz_drv >= ( 128 + ( 0x80000000 / ( sz_sect / 2 ) ) ) )
+        {
+            lba = 6;
+            lba2 = lba + ( 0x80000000 / ( sz_sect / 2 ) );
+            for ( n = 0, u32PseudoRandomGenerator(pns) ; n < (ef_u32_t)(sz_sect * 2) ; n++ )
+            {
+            	pbuff[n] = (ef_u08_t)u32PseudoRandomGenerator(0);
+            }
+            	snprintf( cBuffer, DEBUG_STRING_SIZE,  "  u8EFPrvDriveWrite(%u, 0x%X, %lu, 1)", u8PhyDrvNb, (unsigned int) pbuff, lba );
+            	printf( cBuffer );
+            u8DiskRetVal =  u8EFPrvDriveWrite( u8PhyDrvNb, pbuff, lba, 1 );
+            if ( EF_DISK_RET_OK == u8DiskRetVal )
+            {
+                	printf( " - ok.\r\n" );
+            }
+            else
+            {
+                	printf( " - failed.\r\n" );
+                return 19;
+            }
+            	snprintf( cBuffer, DEBUG_STRING_SIZE,  "  u8EFPrvDriveWrite(%u, 0x%X, %lu, 1)", u8PhyDrvNb, (unsigned int) (pbuff+sz_sect), lba2 );
+            	printf( cBuffer );
+            u8DiskRetVal =  u8EFPrvDriveWrite( u8PhyDrvNb, pbuff+sz_sect, lba2, 1 );
+            if ( EF_DISK_RET_OK == u8DiskRetVal )
+            {
+                	printf( " - ok.\r\n" );
+            }
+            else
+            {
+                	printf( " - failed.\r\n" );
+                return 20;
+            }
+            	snprintf( cBuffer, DEBUG_STRING_SIZE,  "  u8EFPrvDriveIOCtrl(%u, CTRL_SYNC, NULL)", u8PhyDrvNb );
+            	printf( cBuffer );
+            u8DiskRetVal =  u8EFPrvDriveIOCtrl( u8PhyDrvNb, CTRL_SYNC, 0 );
+            if ( EF_DISK_RET_OK == u8DiskRetVal )
+            {
+                	printf( " - ok.\r\n" );
+            }
+            else
+            {
+                	printf( " - failed.\r\n" );
+                return 21;
+            }
+            memset( pbuff, 0, sz_sect * 2 );
+            if ( 0 != DEBUG_ENABLE )
+            {
+            	snprintf( cBuffer, DEBUG_STRING_SIZE,  "  u8EFPrvDriveRead(%u, 0x%X, %lu, 1)", u8PhyDrvNb, (unsigned int) pbuff, lba );
+            	printf( cBuffer );
+            }
+            u8DiskRetVal =  u8EFPrvDriveRead( u8PhyDrvNb, pbuff, lba, 1 );
+            if ( EF_DISK_RET_OK == u8DiskRetVal )
+            {
+                	printf( " - ok.\r\n" );
+            }
+            else
+            {
+                      	printf( " - failed.\r\n" );
+                return 22;
+            }
+             	snprintf( cBuffer, DEBUG_STRING_SIZE,  "  u8EFPrvDriveRead(%u, 0x%X, %lu, 1)", u8PhyDrvNb, (unsigned int) (pbuff+sz_sect), lba2 );
+            	printf( cBuffer );
+            u8DiskRetVal =  u8EFPrvDriveRead( u8PhyDrvNb, pbuff+sz_sect, lba2, 1 );
+            if ( EF_DISK_RET_OK == u8DiskRetVal )
+            {
+             	printf( " - ok.\r\n" );
+            }
+            else
+            {
+             	printf( " - failed.\r\n" );
+              return 23;
+            }
+            for (n = 0, u32PseudoRandomGenerator(pns) ; pbuff[n] == (ef_u08_t)u32PseudoRandomGenerator(0) && n < (ef_u32_t)(sz_sect * 2) ; n++ )
+            {
+            	;
+            }
+            if ( n == (ef_u32_t)( sz_sect * 2 ) )
+            {
+             	printf( " Read data matched.\r\n" );
+            }
+            else
+            {
+             	printf( " Read data differs from the data written.\r\n" );
+              return 24;
+            }
+        }
+        else
+        {
+         	printf( " Test skipped.\r\n" );
+        }
+    pns++;
+
+    snprintf( cBuffer, DEBUG_STRING_SIZE,  "**** Test cycle %lu of %lu completed ****\n\r\n", cc, uiCycles);
+    printf( cBuffer );
+  }
+
+  return 0;
+} /* s32TestSdCardDiskIO */
+
+#if 0
+ErrorStatus eTestSDCardRawSpeed (
+	ef_u08_t		u8PhyDrvNb,				/* Physical drive number */
+	ef_u32_t	u32LBAStart,			/* Start LBA for read/write test */
+	ef_u32_t	u32BytesNb,				/* Number of bytes to read/write (must be multiple of uiBufferSize) */
+	void*		pvBuffer,				/* Read/write buffer */
+	ef_u32_t	u32BufferSize,			/* Size of read/write buffer (must be multiple of EF_CONF_SS_MAX) */
+	test_sdcard_raw_times_st * pxTimes	/* Pointer to transaction time in ticks, first write, then read */
+)
+{
+	ErrorStatus eResult = ERROR;
+	ef_u32_t	u32SectorSize	= EF_CONF_SS_MAX;
+
+    pxTimes->u32Write = 0;
+    pxTimes->u32Read = 0;
+
+    if (		( EF_MIN_SS != EF_CONF_SS_MAX )
+    		&&	( EF_DISK_RET_OK !=  u8EFPrvDriveIOCtrl( u8PhyDrvNb, GET_SECTOR_SIZE, &u32SectorSize ) ) )
+	{
+		if ( 0 != DEBUG_ENABLE )
+		{
+			printf( "\ndisk_ioctl() failed.\r\n" );
+		}
+	}
+    else
+    {
+        ef_u32_t	u32SectorCount	= u32BytesNb / u32SectorSize;
+        ef_u32_t	u32Offset		= 0;
+        ef_u32_t	u32Timer		= 0;
+        char		cBuffer[ DEBUG_STRING_SIZE ];
+
+        eResult = ERROR;
+		snprintf(	cBuffer,
+					DEBUG_STRING_SIZE,
+					"Starting raw write test at sector %lu in %lu bytes of data chunks...",
+					(ef_u32_t) u32LBAStart,
+					(ef_u32_t) u32BufferSize );
+		printf( cBuffer );
+
+		ef_u08_t		u8SectorCount	= 128;
+
+		u32Timer = HAL_GetTick( );
+		for ( u32Offset = 0 ; u32Offset < u32SectorCount ; u32Offset += ( (ef_u32_t) u8SectorCount ) )
+		{
+			eResult = ERROR;
+			if ( ( (ef_u32_t) 128 ) > ( u32SectorCount - u32Offset ) )
+			{
+				u8SectorCount 	= ( u32SectorCount - u32Offset );
+			}
+			if ( EF_DISK_RET_OK !=  u8EFPrvDriveWrite( u8PhyDrvNb, pvBuffer, u32LBAStart + u32Offset, u8SectorCount ) )
+			{
+				if ( 0 != DEBUG_ENABLE )
+				{
+					printf( "\ndisk_write() failed.\r\n" );
+				}
+				break;
+			}
+			else
+			{
+				eResult = SUCCESS;
+			}
+		}
+		if ( SUCCESS == eResult )
+		{
+			if ( EF_DISK_RET_OK !=  u8EFPrvDriveIOCtrl( u8PhyDrvNb, CTRL_SYNC, 0 ) )
+			{
+				if ( 0 != DEBUG_ENABLE )
+				{
+					printf( "\ndisk_ioctl() failed.\r\n" );
+				}
+			}
+			else
+			{
+				eResult = SUCCESS;
+			}
+		}
+		if ( SUCCESS == eResult )
+		{
+			eResult = ERROR;
+			u32Timer = HAL_GetTick( ) - u32Timer;
+			pxTimes->u32Write = u32Timer;
+			if ( 0 != DEBUG_ENABLE )
+			{
+				snprintf(	cBuffer,
+							DEBUG_STRING_SIZE,
+							"\n%lu bytes written and it took %lu timer ticks.\r\n",
+							(ef_u32_t) u32BytesNb,
+							(ef_u32_t) u32Timer );
+				printf( cBuffer );
+				snprintf(	cBuffer,
+							DEBUG_STRING_SIZE,
+							"Starting raw read test at sector %lu in %lu bytes of data chunks...",
+							(ef_u32_t) u32LBAStart,
+							(ef_u32_t) u32BufferSize );
+				printf( cBuffer );
+			}
+
+			ef_u08_t		u8SectorCount	= 128;
+
+			u32Timer = HAL_GetTick( );
+			for ( u32Offset = 0 ; u32Offset < u32SectorCount ; u32Offset += ( (ef_u32_t) u8SectorCount ) )
+			{
+				eResult = ERROR;
+				if ( ( (ef_u32_t) 128 ) > ( u32SectorCount - u32Offset ) )
+				{
+					u8SectorCount 	= ( u32SectorCount - u32Offset );
+				}
+				if ( EF_DISK_RET_OK !=  u8EFPrvDriveRead( u8PhyDrvNb, pvBuffer, u32LBAStart + u32Offset, u8SectorCount ) )
+				{
+					if ( 0 != DEBUG_ENABLE )
+					{
+						printf( "\ndisk_read() failed.\r\n" );
+					}
+					break;
+				}
+				else
+				{
+					eResult = SUCCESS;
+				}
+			}
+		}
+		if ( SUCCESS == eResult )
+		{
+			u32Timer = HAL_GetTick( ) - u32Timer;
+			pxTimes->u32Read = u32Timer;
+			if ( 0 != DEBUG_ENABLE )
+			{
+				snprintf(	cBuffer,
+							DEBUG_STRING_SIZE,
+							"\n%lu bytes read and it took %lu timer ticks.\r\n",
+							(ef_u32_t) u32BytesNb,
+							(ef_u32_t) u32Timer );
+				printf( cBuffer );
+				printf( "Test completed.\r\n" );
+			}
+		}
+	}
+    return SUCCESS;
+} /* s32TestSDCardRawSpeed */
+
+ErrorStatus eTestSDCardFileTimes( ef_u32_t u32Bytes, ef_u08_t * pu8Buffer, test_sdcard_file_times_st * pxTimes )
+{
+	ErrorStatus eResult = ERROR;
+	ef_uXX_t		u32BytesRet = 0;            		/* Bytes written / read */
+	FIL			xSdCardFile __attribute__ ((aligned (32)));
+	const char	cTmpFileName[ ] = "TEMP.tmp";
+
+    /* Create a file as new */
+    if ( FR_OK != f_open( &xSdCardFile, cTmpFileName, FA_CREATE_ALWAYS | FA_WRITE ) )
+	{
+		/* This should never occur! */
+		printf( "\r\nTemp File open Failed\r\n" );
+	}
+    else
+    {
+		ef_u32_t	u32Ticks = HAL_GetTick( );
+		if ( FR_OK != f_write( &xSdCardFile, pu8Buffer, u32Bytes, &u32BytesRet ) )
+		{
+			/* This should never occur! */
+			printf( "\r\nTemp File Write Failed\r\n" );
+		}
+		else if ( u32BytesRet != u32Bytes )
+		{
+			/* This should never occur! */
+			printf( "\r\nTemp File Write Failed\r\n" );
+		}
+		else
+		{
+			eResult = SUCCESS;
+		}
+		pxTimes->u32Write = HAL_GetTick( ) - u32Ticks;
+	}
+	if ( SUCCESS == eResult )
+	{
+		eResult = ERROR;
+		if ( FR_OK != f_close( &xSdCardFile ) )
+		{
+			/* This should never occur! */
+			printf( "\r\nTemp File Close Failed\r\n" );
+		}
+		/* Open an existing file as */
+		else if ( FR_OK != f_open( &xSdCardFile, cTmpFileName, FA_OPEN_EXISTING | FA_READ ) )
+		{
+			/* This should never occur! */
+			printf( "\r\nTemp File open Failed\r\n" );
+		}
+		else
+		{
+			ef_u32_t	u32Ticks = HAL_GetTick( );
+			if ( FR_OK != f_read( &xSdCardFile, pu8Buffer, u32Bytes, &u32BytesRet ) )
+			{
+				/* This should never occur! */
+				printf( "\r\nTemp File Read Failed\r\n" );
+			}
+			else if ( u32BytesRet != u32Bytes )
+			{
+				/* This should never occur! */
+				printf( "\r\nTemp File Read Failed\r\n" );
+			}
+			else
+			{
+				eResult = SUCCESS;
+			}
+			pxTimes->u32Read = HAL_GetTick( ) - u32Ticks;
+			eResult = SUCCESS;
+		}
+	}
+
+	if ( SUCCESS == eResult )
+	{
+		eResult = ERROR;
+		if ( FR_OK != f_close( &xSdCardFile ) )
+		{
+			/* This should never occur! */
+			printf( "\r\nTemp File Close Failed\r\n" );
+		}
+		if ( FR_OK != f_unlink( cTmpFileName ) )
+		{
+			/* This should never occur! */
+			printf( "\r\nTemp File Unlink Failed\r\n" );
+		}
+		else
+		{
+			eResult = SUCCESS;
+		}
+	}
+
+	return eResult;
+} /* eTestSDCardFileTimes */
+#endif
+/* ***************************************************************************************************************** */
+/* END OF FILE ***************************************************************************************************** */
