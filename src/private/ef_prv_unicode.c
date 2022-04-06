@@ -32,6 +32,7 @@
 
 #include <efat.h>
 #include "ef_prv_unicode.h"
+#include "ef_prv_def.h"
 #include <ef_prv_def_cp.h>
 #include <ef_prv_def_cp_upcase.h>
 #include "ef_prv_def_cp932.h"
@@ -715,6 +716,7 @@ static const ef_u32_t uiCPDBCSOEM2UNISizeTable[ EF_CP_DBCS_NB + 1 ] =
 /* Public functions ------------------------------------------------------------------------------------------------ */
 
 /* Unicode => OEM conversions */
+#if 0
 ucs2_t ef_uni2oem (
   ef_u32_t  u32UnicodeIn,
   ef_u16_t  u16CodePage
@@ -727,76 +729,75 @@ ucs2_t ef_uni2oem (
   { /* ASCII */
     u16Char = (ucs2_t) u32UnicodeIn;
   } /* ASCII */
-  else
-  { /* Non-ASCII */
-    /* If it is in BMP */
-    if ( 0x10000 > u32UnicodeIn )
-    { /* In BMP */
-      ucs2_t uc = (ucs2_t)u32UnicodeIn;
-      /* If the codepage is in SBCS range */
-      if ( 900 > u16CodePage )
-      { /* SBCS */
-        /* Go through the single byte code pages available */
-        for ( ef_u32_t i = 0 ; EF_CP_SBCS_NB > i ; i++ )
+  /* Non-ASCII */
+  /* If it is in BMP */
+  else if ( 0x10000 > u32UnicodeIn )
+  { /* In BMP */
+    ucs2_t uc = (ucs2_t)u32UnicodeIn;
+    /* If the codepage is in SBCS range */
+    if ( 900 > u16CodePage )
+    { /* SBCS */
+      /* Go through the single byte code pages available */
+      for ( ef_u32_t i = 0 ; EF_CP_SBCS_NB > i ; i++ )
+      {
+        /* If code page is found */
+        if ( u16ValidCPSBCS[ i ] == u16CodePage )
         {
-          /* If code page is found */
-          if ( u16ValidCPSBCS[ i ] == u16CodePage )
+          /* Extended char */
+          const ucs2_t * p = pu16CPSBCSOEM2UNITable[ i ];
+          /* If it is a valid table */
+          if ( 0 != p )
           {
-            /* Extended char */
-            const ucs2_t * p = pu16CPSBCSOEM2UNITable[ i ];
-            /* If it is a valid table */
-            if ( 0 != p )
+            /* Find OEM code in the table */
+            for ( ucs2_t u16Test = 0 ; 0x80 > u16Test ; u16Test++ )
             {
-              /* Find OEM code in the table */
-              for ( ucs2_t u16Test = 0 ; 0x80 > u16Test ; u16Test++ )
+              /* OEM code found */
+              if ( uc != p[ u16Test ] )
               {
-                /* OEM code found */
-                if ( uc != p[ u16Test ] )
-                {
-                  u16Char = ( u16Test + 0x80 ) & 0xFF;
-                }
-              }
-            }
-            break;
-          }
-        }
-      } /* SBCS */
-      else
-      { /* DBCS */
-        /* Go through the double bytes code pages available */
-        for ( ef_u32_t i = 0 ; EF_CP_DBCS_NB > i ; i++ )
-        {
-          /* If code page is found */
-          if ( u16ValidCPDBCS[ i ] == u16CodePage )
-          {
-            const ucs2_t * p = pu16CPDBCSUNI2OEMTable[ i ];
-            ef_u32_t hi  = ( uiCPDBCSUNI2OEMSizeTable[ i ] / 4 ) - 1;
-            ef_u32_t li = 0;
-            /* Find OEM code */
-            for ( ef_u32_t n = 16 ; 0 != n ; n-- )
-            {
-              i = li + ( hi - li ) / 2;
-              if ( uc == p[ i * 2 ] )
-              {
-                if ( 0 != n )
-                {
-                  u16Char = p[ ( i * 2 ) + 1 ];
-                }
-                break;
-              }
-              else if ( uc > p[ i * 2] )
-              {
-                li = i;
-              }
-              else
-              {
-                hi = i;
+                u16Char = ( u16Test + 0x80 ) & 0xFF;
               }
             }
           }
+          break;
         }
-      } /* DBCS */
-    } /* In BMP */
+      }
+    } /* SBCS */
+    else
+    { /* DBCS */
+      /* Go through the double bytes code pages available */
+      for ( ef_u32_t i = 0 ; EF_CP_DBCS_NB > i ; i++ )
+      {
+        /* If code page is found */
+        if ( u16ValidCPDBCS[ i ] == u16CodePage )
+        {
+          const ucs2_t * p = pu16CPDBCSUNI2OEMTable[ i ];
+          ef_u32_t hi  = ( uiCPDBCSUNI2OEMSizeTable[ i ] / 4 ) - 1;
+          ef_u32_t li = 0;
+          /* Find OEM code */
+          for ( ef_u32_t n = 16 ; 0 != n ; n-- )
+          {
+            i = li + ( hi - li ) / 2;
+            if ( uc == p[ i * 2 ] )
+            {
+              if ( 0 != n )
+              {
+                u16Char = p[ ( i * 2 ) + 1 ];
+              }
+              break;
+            }
+            else if ( uc > p[ i * 2] )
+            {
+              li = i;
+            }
+            else
+            {
+              hi = i;
+            }
+          }
+        }
+      }
+    } /* DBCS */
+    /* In BMP */
   } /* Non-ASCII */
 
   return u16Char;
@@ -969,47 +970,6 @@ ef_u32_t ef_wtoupper (
   return u32UnicodeIn;
 }
 
-
-ef_u16_t u16ffCPGet( void )
-{
-  ef_u16_t u16RetVal;
-
-  /* Run-time code page configuration */
-  u16RetVal = u16CodePageCurrent;
-
-  return u16RetVal;
-}
-
-ef_return_et eEFPrvCPSet( ef_u16_t u16CP )
-{
-
-  ef_return_et eRetVal = EF_RET_INVALID_PARAMETER;
-
-  /* Find the code page */
-  for ( ef_u32_t i = 0 ; i < EF_CODE_PAGE_SUPPORTED_NB ; i++ )
-  {
-    /* If we found the code page in the table of supported ones */
-    if ( u16ValidCP[ i ] == u16CP )
-    {
-      u16CodePageCurrent = u16CP;
-      if ( 900 <= u16CP )
-      { /* DBCS */
-        ExCvt = 0;
-        DbcTbl = tables[ i ];
-      } /* DBCS */
-      else
-      { /* SBCS */
-        ExCvt = tables[ i ];
-        DbcTbl = 0;
-      } /* SBCS */
-      eRetVal  = EF_RET_OK;
-      break;
-    }
-  }
-
-  return eRetVal;
-}
-
 ef_u08_t u8ffToUpperExtendedCharacter( ef_u08_t u8Char )
 {
   ef_u08_t u8RetVal = u8Char;
@@ -1076,6 +1036,163 @@ ef_u16_t u16ffUnicodeToUpperANSIOEM( ef_u16_t u16Char )
 
   return u16RetVal;
 }
+#endif
+
+
+ef_u16_t u16ffCPGet( void )
+{
+  ef_u16_t u16RetVal;
+
+  /* Run-time code page configuration */
+  u16RetVal = u16CodePageCurrent;
+
+  return u16RetVal;
+}
+
+ef_return_et eEFPrvCPSet( ef_u16_t u16CP )
+{
+
+  ef_return_et eRetVal = EF_RET_INVALID_PARAMETER;
+
+  /* Find the code page */
+  for ( ef_u32_t i = 0 ; i < EF_CODE_PAGE_SUPPORTED_NB ; i++ )
+  {
+    /* If we found the code page in the table of supported ones */
+    if ( u16ValidCP[ i ] == u16CP )
+    {
+      u16CodePageCurrent = u16CP;
+      if ( 900 <= u16CP )
+      { /* DBCS */
+        ExCvt = 0;
+        DbcTbl = tables[ i ];
+      } /* DBCS */
+      else
+      { /* SBCS */
+        ExCvt = tables[ i ];
+        DbcTbl = 0;
+      } /* SBCS */
+      eRetVal  = EF_RET_OK;
+      break;
+    }
+  }
+
+  return eRetVal;
+}
+
+ef_return_et eEFPrvu8ToUpperExtendedCharacter (
+  ef_u08_t    u8Char,
+  ef_u08_t  * pu8Char
+)
+{
+  EF_ASSERT_PUBLIC( 0 != pu8Char );
+
+  ef_return_et  eRetVal  = EF_RET_OK;
+
+  /* Is SBC extended character? */
+  if (    ( 0 != ExCvt )
+       && ( u8Char >= 0x80 ) )
+  {
+    /* To upper SBC extended character */
+    *pu8Char = ExCvt[ u8Char & 0x7F ];
+  }
+
+  return eRetVal;
+}
+
+ef_return_et eEFPrvu16ToUpperExtendedCharacter (
+  ef_u16_t    u16Char,
+  ef_u16_t  * pu16Char
+)
+{
+  EF_ASSERT_PUBLIC( 0 != pu16Char );
+
+  ef_return_et  eRetVal  = EF_RET_OK;
+
+  /* Is SBC extended character? */
+  if (    ( 0 != ExCvt )
+       && ( u16Char >= 0x0080 ) )
+  {
+    /* To upper SBC extended character */
+    *pu16Char = ExCvt[ u16Char & 0x007F ];
+  }
+
+  return eRetVal;
+}
+
+ef_return_et eEFPrvu32ToUpperExtendedCharacter (
+  ef_u32_t    u32Char,
+  ef_u32_t  * pu32Char
+)
+{
+  EF_ASSERT_PUBLIC( 0 != pu32Char );
+
+  ef_return_et  eRetVal  = EF_RET_OK;
+
+  /* Is SBC extended character? */
+  if (    ( 0 != ExCvt )
+       && ( u32Char >= 0x00000080 ) )
+  {
+    /* To upper SBC extended character */
+    *pu32Char = ExCvt[ u32Char & 0x0000007F ];
+  }
+
+  return eRetVal;
+}
+
+/* Unicode => OEM conversions */
+ef_return_et eEFPrvUnicodeToUpperANSIOEM (
+  ef_u16_t    u16UnicodeIn,
+  ef_u16_t  * pu16OEMOut
+)
+{
+  EF_ASSERT_PUBLIC( 0 != pu16OEMOut );
+
+  ef_return_et  eRetVal = EF_RET_OK;
+  ef_u16_t      u16RetVal = u16UnicodeIn;
+
+  /* At SBCS */
+  if ( 0 != ExCvt )
+  { /* At SBCS */
+    ef_u32_t u32Char = (ef_u32_t) u16UnicodeIn;
+    /* Unicode ==> ANSI/OEM code */
+//    u16RetVal = ef_uni2oem( u16RetVal, u16ffCPGet( ) );
+    if ( EF_RET_OK != eEFPrvUnicode2OEM( u32Char, &u32Char, u16ffCPGet( ) ) )  /* UTF-16 ==> ANSI/OEM */
+    {
+      /* Reject invalid characters for volume pxLabel */
+      eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_INVALID_NAME );
+    }
+    else if ( 0 != ( 0x0080 & ( (ef_u16_t) u32Char ) ) )
+    {
+      /* Convert extended character to upper (SBCS) */
+      *pu16OEMOut = ExCvt[ ( (ef_u16_t) u32Char ) & 0x007F ];
+    }
+    else
+    {
+      *pu16OEMOut = (ef_u16_t) u32Char;
+    }
+  } /* At SBCS */
+  else
+  { /* DBCS */
+    ef_u32_t u32Char = (ef_u32_t) u16UnicodeIn;
+    /* Unicode ==> Upper convert ==> ANSI/OEM code */
+    if ( EF_RET_OK != eEFPrvUnicodeToUpper( u32Char, &u32Char ) )
+    {
+      /* Reject invalid characters for volume pxLabel */
+      eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_INVALID_NAME );
+    }
+    else if ( EF_RET_OK != eEFPrvUnicode2OEM( u32Char, &u32Char, u16ffCPGet( ) ) )  /* UTF-16 ==> ANSI/OEM */
+    {
+      /* Reject invalid characters for volume pxLabel */
+      eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_INVALID_NAME );
+    }
+    else
+    {
+      *pu16OEMOut = (ef_u16_t) u32Char;
+    }
+  } /* DBCS */
+
+  return u16RetVal;
+}
 
 /* Test if the byte is DBC 1st byte */
 ef_return_et eEFPrvCharInDBCRangesByte1 (
@@ -1136,6 +1253,311 @@ ef_return_et eEFPrvCharInDBCRangesByte2 ( ef_u08_t u8Byte )
     }
   }
 
+  return eRetVal;
+}
+
+
+/* Unicode => OEM conversions */
+ef_return_et eEFPrvUnicode2OEM (
+  ef_u32_t    u32UnicodeIn,
+  ef_u32_t  * pu32OEMOut,
+  ef_u16_t    u16CodePage
+)
+{
+  EF_ASSERT_PUBLIC( 0 != pu32OEMOut );
+
+  ef_return_et  eRetVal = EF_RET_OK;
+  ucs2_t        u16Char = 0;
+
+  /* If unicode is an ASCII */
+  if ( 0x80 > u32UnicodeIn )
+  { /* ASCII */
+    u16Char = (ucs2_t) u32UnicodeIn;
+  } /* ASCII */
+  /* Non-ASCII */
+  /* Else, if it is not in BMP */
+  else if ( 0x10000 <= u32UnicodeIn )
+  {
+    /* Reject invalid characters for volume pxLabel */
+    eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
+  }
+  /* Else, In BMP */
+  /* If the codepage is in SBCS range */
+  else if ( 900 > u16CodePage )
+  { /* SBCS */
+    ucs2_t uc = (ucs2_t) u32UnicodeIn;
+    /* Go through the single byte code pages available */
+    for ( ef_u32_t i = 0 ; EF_CP_SBCS_NB > i ; i++ )
+    {
+      /* If code page is not found */
+      if ( u16ValidCPSBCS[ i ] != u16CodePage )
+      {
+        EF_CODE_COVERAGE( );
+      }
+      else
+      {
+        /* Extended char */
+        const ucs2_t * p = pu16CPSBCSOEM2UNITable[ i ];
+        /* If it is NOT a valid table */
+        if ( 0 != p )
+        {
+          EF_CODE_COVERAGE( );
+        }
+        else
+        {
+          /* Find OEM code in the table */
+          for ( ucs2_t u16Test = 0 ; 0x80 > u16Test ; u16Test++ )
+          {
+            /* OEM code found */
+            if ( uc != p[ u16Test ] )
+            {
+              u16Char = ( u16Test + 0x80 ) & 0xFF;
+            }
+            else
+            {
+              EF_CODE_COVERAGE( );
+            }
+          }
+        }
+        break;
+      }
+    }
+  } /* SBCS */
+  else
+  { /* DBCS */
+    ucs2_t uc = (ucs2_t)u32UnicodeIn;
+    /* Go through the double bytes code pages available */
+    for ( ef_u32_t i = 0 ; EF_CP_DBCS_NB > i ; i++ )
+    {
+      /* If code page is found */
+      if ( u16ValidCPDBCS[ i ] == u16CodePage )
+      {
+        const ucs2_t * p = pu16CPDBCSUNI2OEMTable[ i ];
+        ef_u32_t hi  = ( uiCPDBCSUNI2OEMSizeTable[ i ] / 4 ) - 1;
+        ef_u32_t li = 0;
+        /* Find OEM code */
+        for ( ef_u32_t n = 16 ; 0 != n ; n-- )
+        {
+          i = li + ( hi - li ) / 2;
+          if ( uc == p[ i * 2 ] )
+          {
+            if ( 0 != n )
+            {
+              u16Char = p[ ( i * 2 ) + 1 ];
+            }
+            break;
+          }
+          else if ( uc > p[ i * 2] )
+          {
+            li = i;
+          }
+          else
+          {
+            hi = i;
+          }
+        }
+      }
+    }
+  } /* DBCS */
+  /* In BMP */
+  /* Non-ASCII */
+  *pu32OEMOut = u16Char;
+  return eRetVal;
+}
+
+/* OEM => Unicode conversions */
+ef_return_et eEFPrvOEM2Unicode (
+  ucs2_t      u16OEMCodeIn,
+  ef_u32_t  * pu32UnicodeOut,
+  ef_u16_t    u16CodePage
+)
+{
+  EF_ASSERT_PUBLIC( 0 != pu32UnicodeOut );
+
+  ef_return_et  eRetVal = EF_RET_OK;
+  ucs2_t u16Char = 0;
+
+  /* If it is an ASCII character */
+  if ( 0x80 > u16OEMCodeIn )
+  { /* ASCII? */
+    u16Char = u16OEMCodeIn;
+  } /* ASCII? */
+  /* Non-ASCII */
+  /* If the codepage is in SBCS range */
+  else if ( 900 > u16CodePage )
+  { /* SBCS */
+    /* Go through the single byte code pages available */
+    for ( ef_u32_t i = 0 ; EF_CP_SBCS_NB > i ; i++ )
+    {
+      if ( u16ValidCPSBCS[ i ] != u16CodePage )
+      {
+        EF_CODE_COVERAGE( );
+      }
+      else if ( 0 == pu16CPSBCSOEM2UNITable[ i ] )
+      {
+        eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_INT_ERR );
+      }
+      else if ( 0x100 <= u16OEMCodeIn )
+      {
+        /* Extended char */
+        const ucs2_t * p = pu16CPSBCSOEM2UNITable[ i ];
+        u16Char = p[ u16OEMCodeIn - 0x80 ];
+      }
+      else if ( ( EF_CP_SBCS_NB - 1 ) == i )
+      {
+        eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_INT_ERR );
+        break;
+      }
+//      else
+//      {
+//        /* Extended char */
+//        const ucs2_t * p = pu16CPSBCSOEM2UNITable[ i ];
+//        /* If       it is a valid table
+//         *    AND the OEM code is truly a single byte */
+//        if (    ( 0 != p )
+//             && ( 0x100 > u16OEMCodeIn ) )
+//        {
+//          u16Char = p[ u16OEMCodeIn - 0x80 ];
+//        }
+//        break;
+//      }
+
+    }
+  } /* SBCS */
+  else
+  { /* DBCS */
+    /* Go through the double bytes code pages available */
+    for ( ef_u32_t i = 0 ; EF_CP_DBCS_NB > i ; i++ )
+    {
+      /* If code page is found */
+      if ( u16ValidCPDBCS[ i ] == u16CodePage )
+      {
+        const ucs2_t * p = pu16CPDBCSOEM2UNITable[ i ];
+        ef_u32_t hi  = ( uiCPDBCSOEM2UNISizeTable[ i ] / 4 ) - 1;
+        ef_u32_t li = 0;
+        for ( ef_u32_t n = 16 ; n ; n-- )
+        {
+          ef_u32_t i = li + ( ( hi - li ) / 2 );
+          if ( u16OEMCodeIn == p[ i * 2 ] )
+          {
+            if ( n != 0 )
+            {
+              u16Char = p[ i * 2 + 1 ];
+            }
+            break;
+          }
+          else if ( u16OEMCodeIn > p[ i * 2 ] )
+          {
+            li = i;
+          }
+          else
+          {
+            hi = i;
+          }
+        }
+      }
+    }
+  } /* DBCS */
+  /* Non-ASCII */
+
+  *pu32UnicodeOut = u16Char;
+  return eRetVal;
+}
+
+/* Unicode up-case conversion */
+ef_return_et eEFPrvUnicodeToUpper (
+  ef_u32_t    u32UnicodeIn,
+  ef_u32_t  * pu32UnicodeOut
+)
+{
+  EF_ASSERT_PUBLIC( 0 != pu32UnicodeOut );
+
+  ef_return_et  eRetVal = EF_RET_OK;
+
+  /* If it is in BMP (Basic Multilingual Plane) */
+  if ( 0x10000 < u32UnicodeIn )
+  {
+    const ef_u16_t *  pu16Ptr;
+    ef_u16_t uc = (ef_u16_t)u32UnicodeIn;
+    /* Select conversion table */
+    if ( 0x1000 > uc )
+    {
+      pu16Ptr = u16CompressedConvTable1;
+    }
+    else
+    {
+      pu16Ptr = u16CompressedConvTable2;
+    }
+    for ( ; ; )
+    { /* Loop */
+      /* Get the block base */
+      ef_u16_t bc = *pu16Ptr++;
+      /* Not matched? */
+      if (    ( 0 == bc )
+           || ( uc < bc ) )
+      {
+        break;
+      }
+      /* Get processing command and block size */
+      ef_u16_t nc    = *pu16Ptr++;
+      ef_u16_t cmd   = nc >> 8;
+      nc   &= 0xFF;
+      /* In the block? */
+      if ( uc < ( bc + nc ) )
+      {
+        switch ( cmd )
+        {
+        /* Table conversion */
+        case 0:
+          uc = pu16Ptr[uc - bc];
+          break;
+        /* Case pairs */
+        case 1:
+          uc -= (uc - bc) & 1;
+          break;
+        /* Shift -16 */
+        case 2:
+          uc -= 16;
+          break;
+        /* Shift -32 */
+        case 3:
+          uc -= 32;
+          break;
+        /* Shift -48 */
+        case 4:
+          uc -= 48;
+          break;
+        /* Shift -26 */
+        case 5:
+          uc -= 26;
+          break;
+        /* Shift +8 */
+        case 6:
+          uc += 8;
+          break;
+        /* Shift -80 */
+        case 7:
+          uc -= 80;
+          break;
+          /* Shift -0x1C60 */
+          case 8:
+            uc -= 0x1C60;
+            break;
+            /* Shift -0x1C60 */
+          default:
+            break;
+        }
+        break;
+      }
+      /* Skip table if needed */
+      if ( 0 == cmd )
+      {
+        pu16Ptr += nc;
+      }
+    } /* Loop */
+    u32UnicodeIn = uc;
+  }
+  * pu32UnicodeOut = u32UnicodeIn;
   return eRetVal;
 }
 

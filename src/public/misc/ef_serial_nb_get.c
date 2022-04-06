@@ -51,7 +51,7 @@
 
 ef_return_et eEF_serial_nb_get (
   const TCHAR * pxPath,
-  ef_u32_t   * pu32VolSerialNb
+  ef_u32_t    * pu32VolSerialNb
 )
 {
   EF_ASSERT_PUBLIC( 0 != pxPath );

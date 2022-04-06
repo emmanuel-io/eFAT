@@ -101,11 +101,37 @@ ef_u16_t u16ffCPGet( void );
 /* Set the active code page */
 ef_return_et eEFPrvCPSet( ef_u16_t u16CP );
 
-ef_u08_t u8ffToUpperExtendedCharacter( ef_u08_t u8Char );
-ef_u16_t u16ffToUpperExtendedCharacter( ef_u16_t u16Char );
-ef_u32_t u32ffToUpperExtendedCharacter( ef_u32_t u32Char );
+//ef_u08_t u8ffToUpperExtendedCharacter(
+//  ef_u08_t u8Char
+//);
+ef_return_et eEFPrvu8ToUpperExtendedCharacter (
+  ef_u08_t    u8Char,
+  ef_u08_t  * pu8Char
+);
 
-ef_u16_t u16ffUnicodeToUpperANSIOEM( ef_u16_t u16Char );
+//ef_u16_t u16ffToUpperExtendedCharacter(
+//  ef_u16_t u16Char
+//);
+ef_return_et eEFPrvu16ToUpperExtendedCharacter (
+  ef_u16_t    u16Char,
+  ef_u16_t  * pu16Char
+);
+
+//ef_u32_t u32ffToUpperExtendedCharacter(
+//  ef_u32_t u32Char
+//);
+ef_return_et eEFPrvu32ToUpperExtendedCharacter (
+  ef_u32_t    u32Char,
+  ef_u32_t  * pu32Char
+);
+
+ef_u16_t u16ffUnicodeToUpperANSIOEM(
+  ef_u16_t u16Char
+);
+ef_return_et eEFPrvUnicodeToUpperANSIOEM (
+  ef_u16_t    u16UnicodeIn,
+  ef_u16_t  * pu16OEMOut
+);
 
 /**
  *  @brief  Test if the byte is in the ranges of a DBC 1st byte
@@ -147,9 +173,14 @@ ef_return_et eEFPrvCharInDBCRangesByte2 (
  *
  *  @return The Unicode converted code point, zero on error
  */
-ucs2_t ef_oem2uni (
-  ucs2_t    u16OEMCodeIn,
-  ef_u16_t  u16CodePage
+//ucs2_t ef_oem2uni (
+//  ucs2_t    u16OEMCodeIn,
+//  ef_u16_t  u16CodePage
+//);
+ef_return_et eEFPrvUnicode2OEM (
+  ef_u32_t    u32UnicodeIn,
+  ef_u32_t  * pu32OEMOut,
+  ef_u16_t    u16CodePage
 );
 
 /**
@@ -160,9 +191,14 @@ ucs2_t ef_oem2uni (
  *
  *  @return The OEM converted code point, zero on error
  */
-ucs2_t ef_uni2oem (
-  ef_u32_t  u32UnicodeIn,
-  ef_u16_t  u16CodePage
+//ucs2_t ef_uni2oem (
+//  ef_u32_t  u32UnicodeIn,
+//  ef_u16_t  u16CodePage
+//);
+ef_return_et eEFPrvUnicode2OEM (
+  ef_u32_t    u32UnicodeIn,
+  ef_u32_t  * pu32OEMOut,
+  ef_u16_t    u16CodePage
 );
 
 /**
@@ -172,8 +208,12 @@ ucs2_t ef_uni2oem (
  *
  *  @return The upper case converted code point
  */
-ef_u32_t ef_wtoupper (
-  ef_u32_t  u32UnicodeIn
+//ef_u32_t ef_wtoupper (
+//  ef_u32_t  u32UnicodeIn
+//);
+ef_return_et eEFPrvUnicodeToUpper (
+  ef_u32_t    u32UnicodeIn,
+  ef_u32_t  * pu32UnicodeOut
 );
 
 /* ***************************************************************************************************************** */

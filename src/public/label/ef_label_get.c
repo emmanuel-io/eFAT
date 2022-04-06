@@ -76,7 +76,6 @@ ef_return_et eEF_label_get (
   if ( EF_RET_OK != eEFPrvVolumeMountCheck( &pxPath, &pxFS ) )
   {
     eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
-    EF_CODE_COVERAGE( );
   }
   else
   {
@@ -87,13 +86,28 @@ ef_return_et eEF_label_get (
     xDir.xObject.u32ClstStart = 0;
 
     eRetVal = eEFPrvDirectoryIndexSet( &xDir, 0 );
-    if ( EF_RET_OK == eRetVal )
+    /* No Label entry and return nul string */
+    if ( EF_RET_NO_FILE == eRetVal )
     {
-      ef_u32_t di = 0;
+      pxLabel[ 0 ] = 0;
+      eRetVal = EF_RET_OK;
+    }
+    else if ( EF_RET_OK != eRetVal )
+    {
+      pxLabel[ 0 ] = 0;
+      eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
+    }
+    else
+    {
       /* Find a volume Label entry */
-      eRetVal = DIR_READ_LABEL( &xDir );
-      if ( EF_RET_OK == eRetVal )
+      if ( EF_RET_OK != DIR_READ_LABEL( &xDir ) )
       {
+        pxLabel[ 0 ] = 0;
+        eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
+      }
+      else
+      {
+        ef_u32_t di = 0;
         ef_u32_t si = 0;
         /* Extract volume pxLabel from EF_DIR_ATTRIB_BIT_VOLUME_ID entry */
         while ( si < 11 )
@@ -108,8 +122,20 @@ ef_return_et eEF_label_get (
             {
               u16Char = u16Char << 8 | xDir.pu8Dir[ si++ ];
             }
+            ef_u32_t u32Char = (ef_u32_t) u16Char;
             /* Convert it into Unicode */
-            u16Char = ef_oem2uni( u16Char, u16ffCPGet( ) );
+            if ( EF_RET_OK != eEFPrvOEM2Unicode( u16Char, &u32Char, u16ffCPGet( ) ) )  /* ANSI/OEM ==> UTF-16 */
+            {
+              u16Char = 0;
+              /* Invalid code? */
+              eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_INVALID_NAME );
+            }
+            else
+            {
+              u16Char = (ef_u16_t) u32Char;
+            }
+            /* Convert it into Unicode */
+//            u16Char = ef_oem2uni( u16Char, u16ffCPGet( ) );
             /* Put it in Unicode */
             if ( 0 != u16Char )
             {
@@ -127,6 +153,7 @@ ef_return_et eEF_label_get (
             pxLabel[ di++ ] = (TCHAR) u16Char;
           } /* ANSI/OEM output */
         }
+
         /* Truncate trailing spaces */
         do
         {
@@ -137,17 +164,6 @@ ef_return_et eEF_label_get (
           }
         } while ( ' ' == pxLabel[--di] );
       }
-    }
-    /* No Label entry and return nul string */
-    else if ( EF_RET_NO_FILE == eRetVal )
-    {
-      pxLabel[ 0 ] = 0;
-      eRetVal = EF_RET_OK;
-    }
-    else
-    {
-      pxLabel[ 0 ] = 0;
-      eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
     }
   }
 

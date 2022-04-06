@@ -213,6 +213,7 @@ static void putc_bfd (
 #else            /* Write a code point in ANSI/OEM */
   if (hs != 0) return;
   u16Char = ef_uni2oem( u16Char, u16ffCPGet( ) );  /* UTF-16 ==> ANSI/OEM */
+  (void) eEFPrvUnicode2OEM( u16Char, &u16Char, u16ffCPGet( ) );  /* UTF-16 ==> ANSI/OEM */
   if (u16Char == 0) return;
   if (u16Char >= 0x100) {
     pb->buf[i++] = (ef_u08_t)(u16Char >> 8); nc++;
@@ -313,7 +314,8 @@ TCHAR* eEF_gets (
       if (rc != 1 || !effCharInDBCRangesByte2(s[0])) continue;  /* Wrong code? */
       u16Char = u16Char << 8 | s[0];
     }
-    dc = ef_oem2uni( u16Char, u16ffCPGet( ) );  /* OEM --> */
+//    dc = ef_oem2uni( u16Char, u16ffCPGet( ) );  /* OEM --> */
+    eEFPrvOEM2Unicode( u16Char, &dc, u16ffCPGet( ) )
     if (dc == 0)
       continue;
 #elif (    ( EF_DEF_FILE_IO_UTF16LE == EF_CONF_STRF_ENCODING )

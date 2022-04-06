@@ -177,8 +177,8 @@ ef_return_et eEFPrvNameCreateFAT (
       }
 
       /* Is SBC extended character? => To upper SBC extended character */
-      c = u8ffToUpperExtendedCharacter( c );
-
+//      c = u8ffToUpperExtendedCharacter( c );
+      (void) eEFPrvu8ToUpperExtendedCharacter(c, &c);
       /* Check if it is a DBC 1st byte */
       if ( EF_RET_OK == eEFPrvCharInDBCRangesByte1( c ) )
       { /* DBC */
