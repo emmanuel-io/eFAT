@@ -142,7 +142,7 @@ ef_return_et eEFPrvUnicodeToUpperANSIOEM (
  *  @retval EF_RET_OK     Byte is in range
  *  @retval EF_RET_ERROR  Byte is out of range
  */
-ef_return_et eEFPrvCharInDBCRangesByte1 (
+ef_return_et eEFPrvByteInDBCRanges1 (
   ef_u08_t  u8Byte
 );
 
@@ -155,7 +155,7 @@ ef_return_et eEFPrvCharInDBCRangesByte1 (
  *  @retval EF_RET_OK     Byte is in range
  *  @retval EF_RET_ERROR  Byte is out of range
  */
-ef_return_et eEFPrvCharInDBCRangesByte2 (
+ef_return_et eEFPrvByteInDBCRanges2 (
   ef_u08_t  u8Byte
 );
 
@@ -173,13 +173,9 @@ ef_return_et eEFPrvCharInDBCRangesByte2 (
  *
  *  @return The Unicode converted code point, zero on error
  */
-//ucs2_t ef_oem2uni (
-//  ucs2_t    u16OEMCodeIn,
-//  ef_u16_t  u16CodePage
-//);
-ef_return_et eEFPrvUnicode2OEM (
-  ef_u32_t    u32UnicodeIn,
-  ef_u32_t  * pu32OEMOut,
+ef_return_et eEFPrvOEM2Unicode (
+  ucs2_t      u16OEMCodeIn,
+  ef_u32_t  * pu32UnicodeOut,
   ef_u16_t    u16CodePage
 );
 

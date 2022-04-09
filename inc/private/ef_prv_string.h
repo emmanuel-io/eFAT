@@ -104,8 +104,9 @@ ef_return_et eEFPrvStringFindChar (
  *  @return UTF-16 encoded character (Surrogate pair if >=0x10000)
  *  @retval 0xFFFFFFFF on decode error
  */
-ef_u32_t u32xCharToUTF16 (
-  const TCHAR ** ppxString
+ef_return_et eEFPrvu32xCharToUnicode (
+  const TCHAR** ppxString,
+  ef_u32_t    * pu32UnicodeOut
 );
 
 /**
@@ -117,10 +118,11 @@ ef_u32_t u32xCharToUTF16 (
  *  @return Returns number of encoding units written
  *  @retval 0 Buffer Overflow or wrong encoding
  */
-ef_u08_t put_utf (
-  ef_u32_t   chr,
-  TCHAR     * buf,
-  ef_u32_t   szb
+ef_return_et eEFPrvUnicodePut (
+  ef_u32_t    u32Char,          /* UTF-16 encoded character (Surrogate pair if >=0x10000) */
+  TCHAR     * pxBufferOut,      /* Output buffer */
+  ef_u32_t    u32BufferSize,    /* Size of the buffer */
+  ef_u32_t  * pu32EncodingUnits /* Pointer to the number of encoding units written (0:buffer overflow or wrong encoding) */
 );
 
 /* ***************************************************************************************************************** */

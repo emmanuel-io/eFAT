@@ -86,110 +86,25 @@ ef_return_et eEF_label_set (
     ef_u32_t  u32Index = 0;
     ucs2_t    u16Char;
 
-//    while ( (ef_u32_t)*pxLabel >= ' ' )
-//    {  /* Create volume pxLabel */
-//      if ( EF_DEF_API_OEM != EF_CONF_API_ENCODING )
-//      { /* UNICODE input */
-//        ef_u32_t u32Char = u32xCharToUTF16(&pxLabel);
-//        //u16Char = (u32Char < 0x10000) ? ef_uni2oem( ef_wtoupper( u32Char ), u16ffCPGet( ) ) : 0;
-//        if ( u32Char < 0x10000 )
-//        {
-//          u16Char = ef_uni2oem( ef_wtoupper( u32Char ), u16ffCPGet( ) );
-//        }
-//        else
-//        {
-//          /* code error */
-//          u16Char = 0;
-//        }
-//      } /* UNICODE input */
-//      else
-//      { /* ANSI/OEM input */
-//        u16Char = (ef_u08_t)*pxLabel++;
-//        /* If byte NOT in double byte code range */
-//        if ( EF_RET_OK != eEFPrvCharInDBCRangesByte1( (ef_u08_t) u16Char ) )
-//        {
-//          /* skip */
-//          EF_CODE_COVERAGE( );
-//        }
-//        /* Else, if next byte NOT in double byte code range */
-//        else if ( EF_RET_OK == eEFPrvCharInDBCRangesByte2( (ef_u08_t)*pxLabel ) )
-//        {
-//          /* code error */
-//          u16Char = 0;
-//        }
-//        /* Else, we have a doubly byte character */
-//        else
-//        {
-//          u16Char <<= 8;
-//          u16Char  |= (ef_u08_t) *pxLabel++;
-//        }
-//          //u16Char = eEFPrvCharInDBCRangesByte2((ef_u08_t)*pxLabel) ? u16Char << 8 | (ef_u08_t)*pxLabel++ : 0;
-//        if ( IsLower(u16Char) )
-//        {
-//          /* To upper ASCII characters */
-//          u16Char -= 0x20;
-//        }
-//        u16Char = u16ffToUpperExtendedCharacter( u16Char );  /* To upper extended characters (SBCS cfg) */
-//      } /* ANSI/OEM input */
-////      if (    ( 0 == u16Char )
-////           || ( EF_RET_OK == eEFPrvStringFindChar( badchr + 0, (char) u16Char ) )
-////           || ( u32Index >= (ef_u32_t)((u16Char >= 0x100) ? 10 : 11) ) )
-////      {
-////        /* Reject invalid characters for volume pxLabel */
-////        eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_INVALID_NAME );
-////        (void) eEFPrvFSUnlock( pxFS, eRetVal );
-////        return eRetVal;
-////      }
-//      if ( 0 == u16Char )
-//      {
-//        /* Reject invalid characters for volume pxLabel */
-//        eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_INVALID_NAME );
-//        (void) eEFPrvFSUnlock( pxFS, eRetVal );
-//        return eRetVal;
-//      }
-//      else if ( EF_RET_OK == eEFPrvStringFindChar( badchr + 0, (char) u16Char ) )
-//      {
-//        /* Reject invalid characters for volume pxLabel */
-//        eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_INVALID_NAME );
-//        (void) eEFPrvFSUnlock( pxFS, eRetVal );
-//        return eRetVal;
-//      }
-//      else if ( u32Index >= (ef_u32_t)((u16Char >= 0x100) ? 10 : 11) )
-//      {
-//        /* Reject invalid characters for volume pxLabel */
-//        eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_INVALID_NAME );
-//        (void) eEFPrvFSUnlock( pxFS, eRetVal );
-//        return eRetVal;
-//      }
-//      else
-//      {
-//        EF_CODE_COVERAGE( );
-//      }
-//      if ( 0x100 <= u16Char )
-//      {
-//        u8Buffer[ u32Index++ ] = (ef_u08_t)( u16Char >> 8 );
-//      }
-//      u8Buffer[ u32Index++ ] = (ef_u08_t)u16Char;
-//    } /*while */
-
     if ( EF_DEF_API_OEM != EF_CONF_API_ENCODING )
     { /* UNICODE input */
       while ( (ef_u32_t)*pxLabel >= ' ' )
       {  /* Create volume pxLabel */
-        ef_u32_t u32Char = u32xCharToUTF16(&pxLabel);
+        ef_u32_t u32Char;
+        eEFPrvu32xCharToUnicode( &pxLabel, &u32Char );
         if ( u32Char >= 0x10000 )
         {
-          /* Reject invalid characters for volume pxLabel */
+          /* Reject invalid characters for volume label */
           eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_INVALID_NAME );
         }
         else if ( EF_RET_OK != eEFPrvUnicodeToUpper( u32Char, &u32Char ) )
         {
-          /* Reject invalid characters for volume pxLabel */
+          /* Reject invalid characters for volume label */
           eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_INVALID_NAME );
         }
         else if ( EF_RET_OK != eEFPrvUnicode2OEM( u32Char, &u32Char, u16ffCPGet( ) ) )  /* UTF-16 ==> ANSI/OEM */
         {
-          /* Reject invalid characters for volume pxLabel */
+          /* Reject invalid characters for volume label */
           eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_INVALID_NAME );
         }
         else if ( EF_RET_OK == eEFPrvStringFindChar( badchr + 0, (char) u32Char ) )
@@ -223,13 +138,13 @@ ef_return_et eEF_label_set (
       {  /* Create volume pxLabel */
         u16Char = (ef_u08_t)*pxLabel++;
         /* If byte NOT in double byte code range */
-        if ( EF_RET_OK != eEFPrvCharInDBCRangesByte1( (ef_u08_t) u16Char ) )
+        if ( EF_RET_OK != eEFPrvByteInDBCRanges1( (ef_u08_t) u16Char ) )
         {
           /* skip */
           EF_CODE_COVERAGE( );
         }
         /* Else, if next byte NOT in double byte code range */
-        else if ( EF_RET_OK == eEFPrvCharInDBCRangesByte2( (ef_u08_t)*pxLabel ) )
+        else if ( EF_RET_OK == eEFPrvByteInDBCRanges2( (ef_u08_t)*pxLabel ) )
         {
           /* code error */
           u16Char = 0;
@@ -240,7 +155,7 @@ ef_return_et eEF_label_set (
           u16Char <<= 8;
           u16Char  |= (ef_u08_t) *pxLabel++;
         }
-          //u16Char = eEFPrvCharInDBCRangesByte2((ef_u08_t)*pxLabel) ? u16Char << 8 | (ef_u08_t)*pxLabel++ : 0;
+          //u16Char = eEFPrvByteInDBCRanges2((ef_u08_t)*pxLabel) ? u16Char << 8 | (ef_u08_t)*pxLabel++ : 0;
         if ( IsLower(u16Char) )
         {
           /* To upper ASCII characters */
@@ -337,7 +252,7 @@ ef_return_et eEF_label_set (
         {
           eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
         }
-        /* Else, the entry cleaning failed */
+        /* Else, if the entry cleaning failed */
         else if ( EF_RET_OK !=  eEFPortMemZero( xDir.pu8Dir, EF_DIR_ENTRY_SIZE ) )
         {
           eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
@@ -361,7 +276,6 @@ ef_return_et eEF_label_set (
   (void) eEFPrvFSUnlock( pxFS, eRetVal );
   return eRetVal;
 }
-
 /* ***************************************************************************************************************** */
 /* END OF FILE ***************************************************************************************************** */
 

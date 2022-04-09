@@ -1195,62 +1195,67 @@ ef_return_et eEFPrvUnicodeToUpperANSIOEM (
 }
 
 /* Test if the byte is DBC 1st byte */
-ef_return_et eEFPrvCharInDBCRangesByte1 (
+ef_return_et eEFPrvByteInDBCRanges1 (
   ef_u08_t u8Byte
 )
 {
-  ef_return_et eRetVal = EF_RET_ERROR;
+  ef_return_et eRetVal = EF_RET_OK;
 
-  /* If     current DBCS code range table assigned
+  /* If current DBCS code range table assigned
    *    AND Byte is in range of considered values */
-  if (    ( 0 != DbcTbl )
-       && ( u8Byte >= DbcTbl[ 0 ] ) )
+  if ( 0 == DbcTbl )
   {
-    if ( u8Byte <= DbcTbl[ 1 ] )
-    {
-      /* 1st byte range 1 */
-      eRetVal  = EF_RET_OK;
-    }
-    else if ( ( u8Byte >= DbcTbl[ 2 ] ) && ( u8Byte <= DbcTbl[ 3 ] ) )
-    {
-      /* 1st byte range 2 */
-      eRetVal  = EF_RET_OK;
-    }
-    else
-    {
-      ; /* Code compliance */
-    }
+    eRetVal = EF_RET_ERROR;
+  }
+  else if ( ( DbcTbl[ 0 ] <= u8Byte ) && ( DbcTbl[ 1 ] >= u8Byte ) )
+  {
+    /* 1st byte range 1 */
+    EF_CODE_COVERAGE( );
+  }
+  else if ( ( DbcTbl[ 2 ] <= u8Byte ) && ( DbcTbl[ 3 ] >= u8Byte ) )
+  {
+    /* 1st byte range 2 */
+    EF_CODE_COVERAGE( );
+  }
+  else
+  {
+    eRetVal = EF_RET_ERROR;
   } /* Variable code page */
 
   return eRetVal;
 }
 
 /* Test if the byte is DBC 2nd byte */
-ef_return_et eEFPrvCharInDBCRangesByte2 ( ef_u08_t u8Byte )
+ef_return_et eEFPrvByteInDBCRanges2 (
+  ef_u08_t u8Byte
+)
 {
-  ef_return_et eRetVal = EF_RET_ERROR;
+  ef_return_et eRetVal = EF_RET_OK;
 
   /* If     current DBCS code range table assigned
    *    AND Byte is in range of considered values */
-  if (    ( 0 != DbcTbl )
-       && ( u8Byte >= DbcTbl[ 4 ] ) )
+  if ( 0 == DbcTbl )
   {
-    if ( u8Byte <= DbcTbl[ 5 ] )
-    {
-      eRetVal  = EF_RET_OK;
-    }
-    else if ( ( u8Byte >= DbcTbl[ 6 ] ) && ( u8Byte <= DbcTbl[ 7 ] ) )
-    {
-      eRetVal  = EF_RET_OK;
-    }
-    else if ( ( u8Byte >= DbcTbl[ 8 ] ) && ( u8Byte <= DbcTbl[ 9 ] ) )
-    {
-      eRetVal  = EF_RET_OK;
-    }
-    else
-    {
-      ; /* Code compliance */
-    }
+    eRetVal = EF_RET_ERROR;
+  }
+  else if ( ( DbcTbl[ 4 ] <= u8Byte ) && ( DbcTbl[ 5 ] >= u8Byte ) )
+  {
+    /* 2nd byte range 1 */
+    EF_CODE_COVERAGE( );
+  }
+  else if ( ( DbcTbl[ 6 ] <= u8Byte ) && ( DbcTbl[ 7 ] >= u8Byte ) )
+  {
+    /* 2nd byte range 2 */
+    EF_CODE_COVERAGE( );
+  }
+  else if ( ( DbcTbl[ 8 ] <= u8Byte ) && ( DbcTbl[ 9 ] >= u8Byte ) )
+  {
+    /* 2nd byte range 3 */
+    EF_CODE_COVERAGE( );
+  }
+  else
+  {
+    eRetVal = EF_RET_ERROR;
   }
 
   return eRetVal;
@@ -1278,7 +1283,7 @@ ef_return_et eEFPrvUnicode2OEM (
   /* Else, if it is not in BMP */
   else if ( 0x10000 <= u32UnicodeIn )
   {
-    /* Reject invalid characters for volume pxLabel */
+    /* Reject invalid characters */
     eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
   }
   /* Else, In BMP */

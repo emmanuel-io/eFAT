@@ -81,7 +81,8 @@ ef_return_et eEFPrvNameCreateVFAT (
   for ( ; ; )
   {
     /* Get a character in UTF16 from current API encoding */
-    ef_u32_t uc = u32xCharToUTF16( &pxPath );
+    ef_u32_t uc;
+    (void) u32xCharToUnicodes( &pxPath, &uc );
     /* If code is invalid */
     if ( 0xFFFFFFFF == uc )
     {

@@ -155,7 +155,7 @@ static void putc_bfd (
     }
   }
   tp = (TCHAR*)pb->bs;
-  dc = u32xCharToUTF16(&tp);  /* UTF-8 ==> UTF-16 */
+  (void) u32xCharToUnicode( &tp, &dc );  /* UTF-8 ==> UTF-16 */
   if (dc == 0xFFFFFFFF) return;  /* Wrong code? */
   u16Char = (ucs2_t)dc;
   hs = (ucs2_t)(dc >> 16);

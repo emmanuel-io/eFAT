@@ -179,30 +179,10 @@
   #error Wrong EF_CONF_API_ENCODING setting
 #endif
 
-/**
- *  Type of path name strings on eFAT API
- */
-#if ( EF_DEF_API_UTF8 == EF_CONF_API_ENCODING )  /* API in Unicode UTF-8 encoding */
-  #define _T(x) u8 ## x
-  #define _TEXT(x) u8 ## x
-#elif ( EF_DEF_API_UTF16 == EF_CONF_API_ENCODING )   /* API in Unicode UTF-16 encoding */
-  #define _T(x) L ## x
-  #define _TEXT(x) L ## x
-#elif ( EF_DEF_API_UTF32 == EF_CONF_API_ENCODING )  /* API in Unicode UTF-32 encoding */
-  #define _T(x) U ## x
-  #define _TEXT(x) U ## x
-#elif ( EF_DEF_API_OEM == EF_CONF_API_ENCODING )    /* API in ANSI/OEM in current CP encoding */
-  #define _T(x) x
-  #define _TEXT(x) x
-#else
-  #error Wrong EF_CONF_API_ENCODING setting
-#endif
-
-
 /* Local typedefs, structures, unions and enums -------------------------------------------------------------------- */
 
 /** UTF-16 character type */
-typedef ef_u16_t        ucs2_t;
+typedef ef_u16_t  ucs2_t;
 
 /**
  *  Type of path name strings on eFAT API
@@ -275,7 +255,8 @@ typedef enum {
   EF_RET_FAT_CLUSTER_OVER,      /**< (23) Cluster is empty */
   EF_RET_FAT_CLUSTER_OUT,      /**< (23) Cluster is empty */
   EF_RET_FAT_ERROR,            /**< (28) File allocation table is full */
-  EF_RET_LFN_BUFFER_ERROR      /**< (23) Cluster is empty */
+  EF_RET_LFN_BUFFER_ERROR,      /**< (23) Cluster is empty */
+  EF_RET_BUFFER_ERROR      /**< (23) Cluster is empty */
 } ef_return_et;
 
 /* Local variables ------------------------------------------------------------------------------------------------- */

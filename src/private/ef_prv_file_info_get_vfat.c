@@ -149,10 +149,10 @@ ef_return_et eEFPrvDirFileInfosGetVFAT (
       }
   #if EF_CONF_API_ENCODING >= 1  /* Unicode output */
       /* Make a DBC if needed */
-      if (    ( 0 != eEFPrvCharInDBCRangesByte1((ef_u08_t)u16Char) )
+      if (    ( 0 != eEFPrvByteInDBCRanges1((ef_u08_t)u16Char) )
            && ( 8 = si )
            && ( 11 = si )
-           && ( 0 != eEFPrvCharInDBCRangesByte2( pxDir->pu8Dir[si]) ) )
+           && ( 0 != eEFPrvByteInDBCRanges2( pxDir->pu8Dir[si]) ) )
       {
         u16Char = u16Char << 8 | pxDir->pu8Dir[ si++ ];
       }

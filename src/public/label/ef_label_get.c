@@ -86,6 +86,7 @@ ef_return_et eEF_label_get (
     xDir.xObject.u32ClstStart = 0;
 
     eRetVal = eEFPrvDirectoryIndexSet( &xDir, 0 );
+
     /* No Label entry and return nul string */
     if ( EF_RET_NO_FILE == eRetVal )
     {
@@ -97,74 +98,88 @@ ef_return_et eEF_label_get (
       pxLabel[ 0 ] = 0;
       eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
     }
-    else
+    /* Else, if finding a volume Label entry failed */
+    else if ( EF_RET_OK != DIR_READ_LABEL( &xDir ) )
     {
-      /* Find a volume Label entry */
-      if ( EF_RET_OK != DIR_READ_LABEL( &xDir ) )
-      {
-        pxLabel[ 0 ] = 0;
-        eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
-      }
-      else
-      {
-        ef_u32_t di = 0;
-        ef_u32_t si = 0;
-        /* Extract volume pxLabel from EF_DIR_ATTRIB_BIT_VOLUME_ID entry */
-        while ( si < 11 )
-        {
-          ucs2_t  u16Char = xDir.pu8Dir[ si++ ];
-          /* If Unicode output */
-          if ( EF_DEF_API_OEM != EF_CONF_API_ENCODING )
-          { /* Unicode output */
-            /* If it is a DBC? */
-            if (    ( EF_RET_OK == eEFPrvCharInDBCRangesByte1((ef_u08_t)u16Char) )
-                 && ( si < 11 ) )
-            {
-              u16Char = u16Char << 8 | xDir.pu8Dir[ si++ ];
-            }
-            ef_u32_t u32Char = (ef_u32_t) u16Char;
-            /* Convert it into Unicode */
-            if ( EF_RET_OK != eEFPrvOEM2Unicode( u16Char, &u32Char, u16ffCPGet( ) ) )  /* ANSI/OEM ==> UTF-16 */
-            {
-              u16Char = 0;
-              /* Invalid code? */
-              eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_INVALID_NAME );
-            }
-            else
-            {
-              u16Char = (ef_u16_t) u32Char;
-            }
-            /* Convert it into Unicode */
-//            u16Char = ef_oem2uni( u16Char, u16ffCPGet( ) );
-            /* Put it in Unicode */
-            if ( 0 != u16Char )
-            {
-              u16Char = put_utf( u16Char, &pxLabel[di], 4 );
-            }
-            if ( 0 == u16Char )
-            {
-              di = 0;
-              break;
-            }
-            di += u16Char;
-          } /* Unicode output */
-          else
-          { /* ANSI/OEM output */
-            pxLabel[ di++ ] = (TCHAR) u16Char;
-          } /* ANSI/OEM output */
-        }
-
-        /* Truncate trailing spaces */
-        do
-        {
-          pxLabel[ di ] = 0;
-          if ( 0 == di )
-          {
-            break;
-          }
-        } while ( ' ' == pxLabel[--di] );
-      }
+      pxLabel[ 0 ] = 0;
+      eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
     }
+    /* Else, if ANSI/OEM output */
+    else if ( EF_DEF_API_OEM == EF_CONF_API_ENCODING )
+
+    { /* ANSI/OEM output */
+      pxLabel[ 12 ] = 0;
+      /* Extract volume Label from EF_DIR_ATTRIB_BIT_VOLUME_ID entry */
+      for ( ef_u32_t i = 11 ; 0 >= i ; i-- )
+      {
+        ef_u08_t u8Byte = xDir.pu8Dir[ i ];
+        if ( ' ' == u8Byte )
+        {
+          u8Byte = 0;
+        }
+        else
+        {
+          EF_CODE_COVERAGE( )
+        }
+        pxLabel[ i ] = u8Byte;
+      }
+    } /* ANSI/OEM output */
+
+    else
+
+    { /* Unicode output */
+      ef_u32_t di = 0;
+      ef_u32_t si = 0;
+      /* Extract volume Label from EF_DIR_ATTRIB_BIT_VOLUME_ID entry */
+      while ( si < 11 )
+      {
+        ef_u16_t  u16Char = xDir.pu8Dir[ si ];
+        ef_u32_t  u32EncodingUnits; /* Pointer to the number of encoding units written */
+
+        if ( EF_RET_OK != eEFPrvByteInDBCRanges1((ef_u08_t)u16Char) )
+        {
+          EF_CODE_COVERAGE( );
+        }
+        else if ( 11 <= si )
+        {
+          EF_CODE_COVERAGE( );
+        }
+        else
+        {
+          u16Char = u16Char << 8 | xDir.pu8Dir[ si++ ];
+        }
+        ef_u32_t u32Char = (ef_u32_t) u16Char;
+        /* Convert it into Unicode */
+        if ( EF_RET_OK != eEFPrvOEM2Unicode( u16Char, &u32Char, u16ffCPGet( ) ) )
+        {
+          /* Invalid code? */
+          eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_INVALID_NAME );
+          di = 0;
+          break;
+        }
+        else if ( EF_RET_OK != eEFPrvUnicodePut( u32Char, &pxLabel[di], 4, &u32EncodingUnits ) )  /* ANSI/OEM ==> UTF-16 */
+        {
+          /* Invalid code? */
+          eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_INVALID_NAME );
+          di = 0;
+          break;
+        }
+        else
+        {
+          di += u32EncodingUnits;
+        }
+      }
+      /* Truncate trailing spaces */
+      do
+      {
+        pxLabel[ di ] = 0;
+        if ( 0 == di )
+        {
+          break;
+        }
+      } while ( ' ' == pxLabel[--di] );
+    } /* Unicode output */
+
   }
 
   (void) eEFPrvFSUnlock( pxFS, eRetVal );

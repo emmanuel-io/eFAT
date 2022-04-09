@@ -406,7 +406,7 @@ ef_return_et eEFPrvLFNCreateSFN (
   /* Append the number to the SFN body */
   for ( j = 0 ; ( j < i ) && ( pu8SFNNumBuffer[ j ] != ' ' ) ; j++ )
   {
-    if ( EF_RET_OK != eEFPrvCharInDBCRangesByte1( pu8SFNNumBuffer[ j ] ) )
+    if ( EF_RET_OK != eEFPrvByteInDBCRanges1( pu8SFNNumBuffer[ j ] ) )
     {
       if ( j == ( i - 1 ) )
       {

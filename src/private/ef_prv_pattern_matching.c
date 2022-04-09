@@ -69,7 +69,7 @@ static ef_u32_t u32StringCharGet (
   if (    ( 0 != EF_CONF_VFAT )
        && ( EF_DEF_API_OEM != EF_CONF_API_ENCODING ) )
   { /* Unicode input */
-    chr = u32xCharToUTF16( ppxString );
+    (void) eEFPrvu32xCharToUnicode( ppxString, chr );
     if ( 0xFFFFFFFF == chr )
     {
       /* Wrong UTF encoding is recognized as end of the string */
@@ -90,10 +90,10 @@ static ef_u32_t u32StringCharGet (
     /* To upper SBCS extended char */
     chr = u32ffToUpperExtendedCharacter( chr );
     /* If character is in the range of DBCS first byte */
-    if ( EF_RET_OK == eEFPrvCharInDBCRangesByte1( (ef_u08_t) chr ) )
+    if ( EF_RET_OK == eEFPrvByteInDBCRanges1( (ef_u08_t) chr ) )
     {
       /* If character is in the range of DBCS second byte */
-      if ( EF_RET_OK == eEFPrvCharInDBCRangesByte2( (ef_u08_t) **ppxString ) )
+      if ( EF_RET_OK == eEFPrvByteInDBCRanges2( (ef_u08_t) **ppxString ) )
       {
         /* Add DBC 2nd byte to output */
         chr = chr << 8 | (ef_u08_t)*(*ppxString)++;
