@@ -62,22 +62,22 @@
 /* Public functions ------------------------------------------------------------------------------------------------ */
 
 ef_return_et eEF_getcwd (
-  TCHAR   * buff,
+  TCHAR   * pxString,
   ef_u32_t  len
 )
 {
-  EF_ASSERT_PUBLIC( 0 != buff );
+  EF_ASSERT_PUBLIC( 0 != pxString );
 
   ef_fs_st    * pxFS;
   ef_return_et  eRetVal = EF_RET_OK;
-  TCHAR *       tp = buff;
+  TCHAR       * pxTempString = pxString;
 
   /* Get logical drive */
   /* Set null string to get current volume */
-  buff[ 0 ] = 0;
+  pxString[ 0 ] = 0;
 
   /* Get current volume */
-  if ( EF_RET_OK != eEFPrvVolumeMountCheck( (const TCHAR**) &buff, &pxFS ) )
+  if ( EF_RET_OK != eEFPrvVolumeMountCheck( (const TCHAR**) &pxString, &pxFS ) )
   {
     eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
   }
@@ -95,7 +95,7 @@ ef_return_et eEF_getcwd (
     eRetVal = EF_LFN_BUFFER_SET( pxFS );
 
     /* Follow parent directories and create the pxPath */
-    i = len;      /* Bottom of buffer (directory stack base) */
+    i = len;      /* Bottom of pxStringer (directory stack base) */
     /* Start to follow upper directory from current directory */
     xDir.xObject.u32ClstStart = pxFS->u32DirClstCurrent;
 
@@ -106,11 +106,13 @@ ef_return_et eEF_getcwd (
       eRetVal = eEFPrvDirectoryIndexSet( &xDir, 1 * EF_DIR_ENTRY_SIZE );
       if ( EF_RET_OK != eRetVal )
       {
+        eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
         break;
       }
       eRetVal = eEFPrvFSWindowLoad( pxFS, xDir.xSector );
       if ( EF_RET_OK != eRetVal )
       {
+        eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
         break;
       }
       /* Goto parent directory */
@@ -156,7 +158,7 @@ ef_return_et eEF_getcwd (
       {
         break;
       }
-      /* Get the directory name and push it to the buffer */
+      /* Get the directory name and push it to the pxStringer */
       (void) eEFPrvDirFileInfosGet( &xDir, &xFileInfo );
       /* Name length */
       for ( n = 0 ; xFileInfo.xName[ n ] ; n++ ) ;
@@ -169,15 +171,15 @@ ef_return_et eEF_getcwd (
       while ( 0 != n )
       {
         /* Stack the name */
-        buff[ --i ] = xFileInfo.xName[ --n ];
+        pxString[ --i ] = xFileInfo.xName[ --n ];
       }
-      buff[ --i ] = '/';
+      pxString[ --i ] = '/';
     }
     if ( EF_RET_OK == eRetVal )
     {
       if ( i == len )
       {
-        buff[--i] = '/';  /* Is it the root-directory? */
+        pxString[--i] = '/';  /* Is it the root-directory? */
       }
       if ( EF_CONF_VOLUMES_NB >= 2 )     /* Put drive prefix */
       {
@@ -187,8 +189,8 @@ ef_return_et eEF_getcwd (
         {
           int8_t  s8VolumeNb;
           (void) eEFPrvVolumeNbCurrentGet( &s8VolumeNb );
-          *tp++ = (TCHAR)'A' + s8VolumeNb;
-          *tp++ = (TCHAR)':';
+          *pxTempString++ = (TCHAR)'A' + s8VolumeNb;
+          *pxTempString++ = (TCHAR)':';
           vl = 2;
         }
         if ( 0 == vl )
@@ -210,7 +212,7 @@ ef_return_et eEF_getcwd (
       {
         do
         {
-          *tp++ = buff[ i++ ];
+          *pxTempString++ = pxString[ i++ ];
         }
         while ( i < len );  /* Copy stacked pxPath string */
       }
@@ -218,7 +220,8 @@ ef_return_et eEF_getcwd (
     EF_LFN_BUFFER_FREE();
   }
 
-  *tp = 0;
+  *pxTempString = 0;
+
   (void) eEFPrvFSUnlock( pxFS, eRetVal );
   return eRetVal;
 }

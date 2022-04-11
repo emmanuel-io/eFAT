@@ -70,6 +70,8 @@ ef_return_et eEF_stat (
   else
   {
     ef_directory_st xDir;
+    ef_return_et    eResult;
+
 
     EF_LFN_BUFFER_DEFINE
 
@@ -81,7 +83,12 @@ ef_return_et eEF_stat (
       eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
     }
     /* Else, if following file path failed */
-    else if ( EF_RET_OK != eEFPrvPathFollow( pxPath, &xDir ) )
+    else if ( EF_RET_OK != eEFPrvPathFollow( pxPath, &xDir, &eResult ) )
+    {
+      eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_INVALID_NAME );
+    }
+    /* Else, if following file path failed */
+    else if ( EF_RET_OK != eResult )
     {
       eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_INVALID_NAME );
     }
@@ -101,34 +108,6 @@ ef_return_et eEF_stat (
     }
     EF_LFN_BUFFER_FREE();
   }
-
-//  ef_directory_st xDir;
-//
-//  /* Get logical drive */
-//  eRetVal = eEFPrvVolumeMountCheck( &pxPath, &xDir.xObject.pxFS );
-//  if ( EF_RET_OK == eRetVal )
-//  {
-//    EF_LFN_BUFFER_DEFINE
-//
-//    eRetVal = EF_LFN_BUFFER_SET(xDir.xObject.pxFS);
-//    /* Follow the file path */
-//    eRetVal = eEFPrvPathFollow( pxPath, &xDir );
-//    /* If follow completed */
-//    if ( EF_RET_OK == eRetVal )
-//    {
-//      /* If it is origin directory */
-//      if ( 0 != ( EF_NS_NONAME & xDir.u8Name[ EF_NSFLAG ] ) )
-//      {
-//        eRetVal = EF_RET_INVALID_NAME;
-//      }
-//      else
-//      { /* Found an object */
-//        (void) eEFPrvDirFileInfosGet( &xDir, pxFileInfo) ;
-//      }
-//    }
-//    EF_LFN_BUFFER_FREE();
-//  }
-//  (void) eEFPrvFSUnlock( xDir.xObject.pxFS, eRetVal );
 
   (void) eEFPrvFSUnlock( pxFS, eRetVal );
   return eRetVal;

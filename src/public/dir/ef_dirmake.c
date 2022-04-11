@@ -67,34 +67,48 @@ ef_return_et eEF_dirmake (
   ef_fs_st    * pxFS;
 
   /* Get logical drive */
-  eRetVal = eEFPrvVolumeMountCheck( &pxPath, &pxFS );
-  if ( EF_RET_OK == eRetVal )
+  if ( EF_RET_OK != eEFPrvVolumeMountCheck( &pxPath, &pxFS ) )
+  {
+    eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
+  }
+  else
   {
     ef_directory_st xDir;
     ef_object_st xSyncObject;
     ef_u32_t       dcl;
     ef_u32_t       pcl;
     ef_u32_t       tm;
+    ef_return_et  eResult;
+
+
     EF_LFN_BUFFER_DEFINE
 
     xDir.xObject.pxFS = pxFS;
-    eRetVal = EF_LFN_BUFFER_SET( pxFS );
-    /* Follow the file path */
-    eRetVal = eEFPrvPathFollow( pxPath, &xDir );
+
+    /* If LFN BUFFER initialization failed */
+    if ( EF_RET_OK != EF_LFN_BUFFER_SET( pxFS ) )
+    {
+      eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
+    }
+    /* Else, if following file path failed */
+    else if ( EF_RET_OK != eEFPrvPathFollow( pxPath, &xDir, &eResult ) )
+    {
+      eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_INVALID_NAME );
+    }
     /* If Name collision */
-    if ( EF_RET_OK == eRetVal )
+    else if ( EF_RET_OK == eResult )
     {
       eRetVal = EF_RET_EXIST;
     }
     /* Else, if Invalid name */
     else if (    ( 0 != EF_CONF_RELATIVE_PATH )
-              && ( EF_RET_NO_FILE == eRetVal )
+              && ( EF_RET_NO_FILE == eResult )
               && ( 0 != ( EF_NS_DOT & xDir.u8Name[ EF_NSFLAG ] ) ) )
     {
       eRetVal = EF_RET_INVALID_NAME;
     }
     /* Else, if it is clear to create a new directory */
-    else if ( EF_RET_NO_FILE == eRetVal )
+    else if ( EF_RET_NO_FILE == eResult )
     {
       /* New object u16MountId to create a new chain */
       xSyncObject.pxFS = pxFS;

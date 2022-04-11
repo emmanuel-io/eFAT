@@ -69,23 +69,35 @@ ef_return_et eEF_diropen (
 
   if ( 0 == pxDir )
   {
-    return EF_RET_INVALID_OBJECT;
+    eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_INVALID_OBJECT );
+  }
+  /* Get logical drive */
+  else if ( EF_RET_OK != eEFPrvVolumeMountCheck( &pxPath, &pxFS ) )
+  {
+    eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
   }
   else
   {
-    EF_CODE_COVERAGE( );
-  }
+    ef_return_et  eResult;
 
-  /* Get logical drive */
-  eRetVal = eEFPrvVolumeMountCheck( &pxPath, &pxFS );
-  if ( EF_RET_OK == eRetVal )
-  {
     pxDir->xObject.pxFS = pxFS;
-    eRetVal = EF_LFN_BUFFER_SET( pxFS );
+
+    /* If LFN BUFFER initialization failed */
+    if ( EF_RET_OK != EF_LFN_BUFFER_SET( pxFS ) )
+    {
+      eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
+    }
     /* Follow the pxPath to the directory */
-    eRetVal = eEFPrvPathFollow( pxPath, pxDir );
+    else if ( EF_RET_OK != eEFPrvPathFollow( pxPath, pxDir, &eResult ) )
+    {
+      eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
+    }
+    else if ( EF_RET_NO_FILE == eResult )
+    {
+      eRetVal = EF_RET_NO_PATH;
+    }
     /* Follow completed */
-    if ( EF_RET_OK == eRetVal )
+    else if ( EF_RET_OK == eResult )
     {
       /* It is not the origin directory itself */
       if ( 0 == ( EF_NS_NONAME & pxDir->u8Name[EF_NSFLAG] ) )
@@ -148,14 +160,6 @@ ef_return_et eEF_diropen (
       EF_CODE_COVERAGE( );
     }
     EF_LFN_BUFFER_FREE();
-    if ( EF_RET_NO_FILE == eRetVal )
-    {
-      eRetVal = EF_RET_NO_PATH;
-    }
-    else
-    {
-      EF_CODE_COVERAGE( );
-    }
   }
   if ( EF_RET_OK != eRetVal )
   {

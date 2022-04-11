@@ -100,9 +100,9 @@ ef_return_et eEF_getfree (
         /* FAT12: Scan bit field FAT entries */
         for ( ef_u32_t u32Cluster = 2 ; u32Cluster < pxFS->u32FatEntriesNb ; u32Cluster++ )
         {
-          eRetVal = eEFPrvFATGet( pxFS, u32Cluster, &u32Status );
-          if ( EF_RET_OK != eRetVal )
+          if ( EF_RET_OK != eEFPrvFATGet( pxFS, u32Cluster, &u32Status ) )
           {
+            eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
             break;
           }
           if ( 0 == u32Status )
@@ -123,9 +123,9 @@ ef_return_et eEF_getfree (
           do {  /* Counts number of entries with zero in the FAT */
             if ( 0 == i )
             {
-              eRetVal = eEFPrvFSWindowLoad( pxFS, xSector++ );
-              if ( EF_RET_OK != eRetVal )
+              if ( EF_RET_OK != eEFPrvFSWindowLoad( pxFS, xSector++ ) )
               {
+                eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
                 break;
               }
             }

@@ -88,7 +88,7 @@ ef_return_et eEF_mount (
 {
   EF_ASSERT_PUBLIC( 0 != pxPath );
 
-  ef_return_et  eRetVal = EF_RET_INVALID_DRIVE;
+  ef_return_et  eRetVal = EF_RET_OK;
   const TCHAR * rp = pxPath;
   int8_t        s8VolumeNb = -1;
   ef_fs_st    * pxFS = 0;
@@ -138,9 +138,9 @@ ef_return_et eEF_mount (
 //    pu8pointer    = &xeFATWindows[ s8VolumeNb * EF_CONF_SS_MAX ];
     xeFAT[ s8VolumeNb ].pu8Window    = &xeFATWindows[ s8VolumeNb * EF_CONF_SECTOR_SIZE ];
 //    eRetVal = eEFPrvVolumeMount( &pxPath, &pxFS, u8ReadOnly );
-    eRetVal = eEFPrvVolumeMount( &xeFAT[ s8VolumeNb ], u8ReadOnly );
+
     /* if mounting the volume failed */
-    if ( EF_RET_OK != eRetVal )
+    if ( EF_RET_OK != eEFPrvVolumeMount( &xeFAT[ s8VolumeNb ], u8ReadOnly ) )
     {
       (void) eEFPrvFSUnlockForce( &xeFAT[ s8VolumeNb ] );
       /* Discard sync object of the current volume */
@@ -150,7 +150,7 @@ ef_return_et eEF_mount (
       }
       else
       {
-        eRetVal = EF_RETURN_CODE_HANDLER( eRetVal );
+        eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_INVALID_DRIVE );
       }
     }
     else if ( EF_RET_OK != eEFPrvVolumeFSPtrSet( s8VolumeNb, &xeFAT[ s8VolumeNb ] ) )
@@ -163,7 +163,7 @@ ef_return_et eEF_mount (
     }
     else
     {
-      eRetVal = EF_RET_OK;
+      EF_CODE_COVERAGE( );
     }
   }
 

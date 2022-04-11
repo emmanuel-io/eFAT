@@ -54,8 +54,9 @@
 /**
  *  @brief  Follow a file pxPath
  *
- *  @param  pxPath  Full-path string to find a file or directory
- *  @param  pxDir   Directory object to return last directory and found object
+ *  @param  pxPath    Full-path string to find a file or directory
+ *  @param  pxDir     Directory object to return last directory and found object
+ *  @param  peResult  Pointer to a holding enumerated type for the search result
  *
  *  @return Function completion
  *  @retval EF_RET_OK                   Succeeded
@@ -80,7 +81,8 @@
  */
 ef_return_et eEFPrvPathFollow (
   const TCHAR     * pxPath,
-  ef_directory_st * pxDir
+  ef_directory_st * pxDir,
+  ef_return_et    * peResult
 );
 
 /* ***************************************************************************************************************** */

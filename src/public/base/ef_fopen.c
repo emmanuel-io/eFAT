@@ -190,11 +190,16 @@ ef_return_et eEF_fopen (
     }
     else
     {
-      /* Follow the file path */
-      eRetVal = eEFPrvPathFollow( pxPath, &xDir );
 
+      ef_return_et  eResult;
+
+      /* Follow the file path */
+      if ( EF_RET_OK != eEFPrvPathFollow( pxPath, &xDir, &eResult ) )
+      {
+        eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
+      }
       /* Directory found for this path */
-      if ( EF_RET_OK == eRetVal )
+      else if ( EF_RET_OK == eResult )
       {
         /* If it is Origin directory itself */
         if ( 0 != ( EF_NS_NONAME & xDir.u8Name[ EF_NSFLAG ] ) )
@@ -240,7 +245,7 @@ ef_return_et eEF_fopen (
 
       /* Else, if     File doesn't exist
        *          AND opening mode is anyway or new only */
-      else if (    ( EF_RET_NO_FILE == eRetVal )
+      else if (    ( EF_RET_NO_FILE == eResult )
                 && ( 0 != ( u8Mode & (   EF_FILE_OPEN_ANYWAY
                                        | EF_FILE_OPEN_NEW ) ) ) )
       { /* Create or Open a file */

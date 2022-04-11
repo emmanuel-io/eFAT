@@ -62,38 +62,33 @@ ef_return_et eEF_dirclose (
 {
   EF_ASSERT_PUBLIC( 0 != pxDir );
 
-  ef_return_et  eRetVal;
+  ef_return_et  eRetVal = EF_RET_OK;
   ef_fs_st    * pxFS;
 
   /* Check validity of the file object */
-  eRetVal = eEFPrvValidateObject( &pxDir->xObject, &pxFS );
-  if ( EF_RET_OK == eRetVal )
+  if ( EF_RET_OK != eEFPrvValidateObject( &pxDir->xObject, &pxFS ) )
   {
-    if ( 0 != pxDir->xObject.u32LockId )
-    {
-      /* Decrement sub-directory open counter */
-      eRetVal = eEFPrvLockDec( pxDir->xObject.u32LockId );
-    }
-    else
-    {
-      EF_CODE_COVERAGE( );
-    }
-    if ( EF_RET_OK == eRetVal )
-    {
-      /* Invalidate directory object */
-      pxDir->xObject.pxFS = 0;
-    }
-    else
-    {
-      EF_CODE_COVERAGE( );
-    }
-    /* Unlock volume */
-    (void) eEFPrvFSUnlock( pxFS, EF_RET_OK );
+    eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
+  }
+  else if ( 0 == pxDir->xObject.u32LockId )
+  {
+    EF_CODE_COVERAGE( );
+    /* Invalidate directory object */
+    pxDir->xObject.pxFS = 0;
+  }
+  /* Decrement sub-directory open counter */
+  else if ( EF_RET_OK != eEFPrvLockDec( pxDir->xObject.u32LockId ) )
+  {
+    eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
   }
   else
   {
-    EF_CODE_COVERAGE( );
+    /* Invalidate directory object */
+    pxDir->xObject.pxFS = 0;
   }
+  /* Unlock volume */
+  (void) eEFPrvFSUnlock( pxFS, EF_RET_OK );
+
   return eRetVal;
 }
 

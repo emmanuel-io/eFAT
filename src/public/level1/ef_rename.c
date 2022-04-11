@@ -86,9 +86,11 @@ ef_return_et eEF_rename (
   eRetVal = eEFPrvVolumeMountCheck( &pxPath_old, &pxFS );
   if ( EF_RET_OK == eRetVal )
   {
+    ef_return_et  eResult;
+
     djo.xObject.pxFS = pxFS;
     eRetVal = EF_LFN_BUFFER_SET( pxFS );
-    eRetVal = eEFPrvPathFollow( pxPath_old, &djo );
+    eRetVal = eEFPrvPathFollow( pxPath_old, &djo, &eResult );
     /* Check old object */
     if (    ( EF_RET_OK == eRetVal )
          && ( 0 != ( ( EF_NS_DOT | EF_NS_NONAME ) & djo.u8Name[ EF_NSFLAG ] ) ) )
@@ -103,13 +105,14 @@ ef_return_et eEF_rename (
     /* Object to be renamed is found */
     if ( EF_RET_OK == eRetVal )
     {
+      ef_return_et  eResult;
 
       /* Save directory entry of the object */
       eEFPortMemCopy( djo.pu8Dir, buf, EF_DIR_ENTRY_SIZE );
       /* Duplicate the directory object */
       eEFPortMemCopy( &djo, &djn, sizeof(ef_directory_st) );
       /* Make sure if new object name is not in use */
-      eRetVal = eEFPrvPathFollow( pxPath_new, &djn );
+      eRetVal = eEFPrvPathFollow( pxPath_new, &djn, &eResult );
       if ( EF_RET_OK == eRetVal )
       {/* Is new name already in use by any other object? */
         if (    ( djn.xObject.u32ClstStart == djo.xObject.u32ClstStart )

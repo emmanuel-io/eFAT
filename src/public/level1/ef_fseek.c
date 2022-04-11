@@ -71,7 +71,7 @@ ef_return_et eEF_fseek (
   /* If File object is not valid */
   if ( EF_RET_OK != eEFPrvValidateObject( &pxFile->xObject, &pxFS ) )
   {
-    eRetVal = EF_RET_ERROR;
+    eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
   }
   /* Else, if file offset is  0 */
   else
@@ -131,7 +131,7 @@ ef_return_et eEF_fseek (
           /* Else, If creating a new chain failed */
         else if ( EF_RET_OK != eEFPrvFATChainCreate(&pxFile->xObject, &u32ClusterNb) )
         {
-          eRetVal = EF_RET_ERROR;
+          eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
           (void) eEFPrvFSUnlock(pxFS, eRetVal);
           return eRetVal;
         }
@@ -163,7 +163,7 @@ ef_return_et eEF_fseek (
             {
               /* Clip file size in case of disk full */
               u32Offset = 0;
-              eRetVal = EF_RET_INT_ERR;
+              eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_INT_ERR );
               break;
             }
             else
@@ -174,12 +174,12 @@ ef_return_et eEF_fseek (
           /* Else, if Following cluster chain if not in write mode failed */
           else if ( EF_RET_OK != eEFPrvFATGet( pxFS, u32ClusterNb, &u32ClusterNb ) )
           {
-            eRetVal = EF_RET_INT_ERR;
+            eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_INT_ERR );
             break;
           }
           else if ( u32ClusterNb >= pxFS->u32FatEntriesNb )
           {
-            eRetVal = EF_RET_INT_ERR;
+            eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_INT_ERR );
             break;
           }
           else
@@ -197,7 +197,7 @@ ef_return_et eEF_fseek (
             /* Current sector */
             if ( EF_RET_OK != eEFPrvFATClusterToSector(pxFS, pxFile->u32Clst, &xSectorNb) )
             {
-              eRetVal = EF_RET_INT_ERR;
+              eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_INT_ERR );
             }
             else
             {
@@ -216,7 +216,11 @@ ef_return_et eEF_fseek (
       }
     }
 
-    if ( EF_RET_OK == eRetVal )
+    if ( EF_RET_OK != eRetVal )
+    {
+      EF_CODE_COVERAGE( );
+    }
+    else
     {
       /* Set file change Flag if the file size is extended */
       if ( pxFile->u32FileOffset > pxFile->u32Size )
@@ -236,13 +240,13 @@ ef_return_et eEF_fseek (
       /* Else, if Write-back dirty sector cache if needed failed */
       else if ( EF_RET_OK != eEFPrvFileWindowDirtyWriteBack ( pxFile, pxFS ) )
       {
-        eRetVal = EF_RET_DISK_ERR;
+        eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_DISK_ERR );
       }
       /* Else, if Reload sector cache failed */
       else if ( EF_RET_OK != eEFPrvDriveRead( pxFS->u8PhysDrv, pxFile->u8Window, xSectorNb, 1 ) )
       {
         /* Fill sector cache */
-        eRetVal = EF_RET_DISK_ERR;
+        eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_DISK_ERR );
       }
       else
       {

@@ -553,7 +553,7 @@ ef_return_et eEFPrvPartitionCreate (
         /* Clean the buffer if needed */
         eEFPortMemZero( buf, ss );
       }
-      /* Is the size table not termintated? */
+      /* Is the size table not terminated? */
       if ( 0 != n_lba64 )
       {
         s_lba64 = (s_lba64 + uiDataAlign - 1) & ((ef_u64_t)0 - uiDataAlign);  /* Align partition start */

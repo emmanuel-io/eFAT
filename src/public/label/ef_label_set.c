@@ -96,38 +96,39 @@ ef_return_et eEF_label_set (
         {
           /* Reject invalid characters for volume label */
           eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_INVALID_NAME );
+          break;
         }
         else if ( EF_RET_OK != eEFPrvUnicodeToUpper( u32Char, &u32Char ) )
         {
           /* Reject invalid characters for volume label */
           eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_INVALID_NAME );
+          break;
         }
         else if ( EF_RET_OK != eEFPrvUnicode2OEM( u32Char, &u32Char, u16ffCPGet( ) ) )  /* UTF-16 ==> ANSI/OEM */
         {
           /* Reject invalid characters for volume label */
           eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_INVALID_NAME );
+          break;
         }
         else if ( EF_RET_OK == eEFPrvStringFindChar( badchr + 0, (char) u32Char ) )
         {
           /* Reject invalid characters for volume pxLabel */
           eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_INVALID_NAME );
-          (void) eEFPrvFSUnlock( pxFS, eRetVal );
-          return eRetVal;
+          break;
         }
         else if ( u32Index >= (ef_u32_t)((u32Char >= 0x100) ? 10 : 11) )
         {
           /* Reject invalid characters for volume pxLabel */
           eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_INVALID_NAME );
-          (void) eEFPrvFSUnlock( pxFS, eRetVal );
-          return eRetVal;
+          break;
+        }
+        else if ( 0x100 <= u16Char )
+        {
+          u8Buffer[ u32Index++ ] = (ef_u08_t)( u16Char >> 8 );
         }
         else
         {
           EF_CODE_COVERAGE( );
-        }
-        if ( 0x100 <= u16Char )
-        {
-          u8Buffer[ u32Index++ ] = (ef_u08_t)( u16Char >> 8 );
         }
         u8Buffer[ u32Index++ ] = (ef_u08_t)u16Char;
       } /*while */
@@ -155,23 +156,27 @@ ef_return_et eEF_label_set (
           u16Char <<= 8;
           u16Char  |= (ef_u08_t) *pxLabel++;
         }
-          //u16Char = eEFPrvByteInDBCRanges2((ef_u08_t)*pxLabel) ? u16Char << 8 | (ef_u08_t)*pxLabel++ : 0;
+
         if ( IsLower(u16Char) )
         {
           /* To upper ASCII characters */
           u16Char -= 0x20;
         }
-        u16Char = u16ffToUpperExtendedCharacter( u16Char );  /* To upper extended characters (SBCS cfg) */
-        if ( 0 == u16Char )
+        /* To upper extended characters */
+        else if ( EF_RET_OK != eEFPrvu16ToUpperExtendedCharacter( u16Char, &u16Char ) )
         {
-          /* Reject invalid characters for volume pxLabel */
+          eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_INVALID_NAME );
+        }
+        else if ( 0 == u16Char )
+        {
+          /* Reject invalid characters for volume label */
           eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_INVALID_NAME );
           (void) eEFPrvFSUnlock( pxFS, eRetVal );
           return eRetVal;
         }
         else if ( EF_RET_OK == eEFPrvStringFindChar( badchr + 0, (char) u16Char ) )
         {
-          /* Reject invalid characters for volume pxLabel */
+          /* Reject invalid characters for volume label */
           eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_INVALID_NAME );
           (void) eEFPrvFSUnlock( pxFS, eRetVal );
           return eRetVal;
@@ -195,80 +200,99 @@ ef_return_et eEF_label_set (
       } /*while */
     } /* ANSI/OEM input */
 
-    if ( EF_DIR_DELETED_MASK == u8Buffer[ 0 ] )
+    if ( EF_RET_OK != eRetVal )
+    {
+      EF_CODE_COVERAGE( );
+    }
+    else if ( EF_DIR_DELETED_MASK == u8Buffer[ 0 ] )
     {
       /* Reject illegal name (heading EF_DIR_DELETED_MASK) */
       eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_INVALID_NAME );
-      (void) eEFPrvFSUnlock( pxFS, eRetVal );
-      return eRetVal;
-    }
-    while ( ( 0 != u32Index ) && ( ' ' == u8Buffer[ u32Index - 1 ] ) )
-    {
-      /* Snip trailing spaces */
-      u32Index--;
-    }
-
-    ef_directory_st   xDir;
-    /* Set volume pxLabel */
-    xDir.xObject.pxFS = pxFS;
-    /* Open root directory */
-    xDir.xObject.u32ClstStart = 0;
-
-    if ( EF_RET_OK != eEFPrvDirectoryIndexSet( &xDir, 0 ) )
-    {
-      eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
     }
     else
     {
-      /* Get volume Label entry */
-      eRetVal = DIR_READ_LABEL( &xDir );
-      /* If an entry was found */
-      if ( EF_RET_OK == eRetVal )
+      while ( ( 0 != u32Index ) && ( ' ' == u8Buffer[ u32Index - 1 ] ) )
       {
-        if ( 0 != u32Index )
-        {
-          /* Change the volume pxLabel */
-          eEFPortMemCopy( u8Buffer, xDir.pu8Dir, 11 );
-        }
-        else
-        {
-          /* Remove the volume pxLabel */
-          xDir.pu8Dir[ EF_DIR_NAME_START ] = EF_DIR_DELETED_MASK;
-        }
-        pxFS->u8WinFlags = EF_FS_WIN_DIRTY;
-        eRetVal = eEFPrvFSSync( pxFS );
+        /* Snip trailing spaces */
+        u32Index--;
       }
-      /* Else, if No volume Label entry */
-      else if ( EF_RET_NO_FILE == eRetVal)
+
+      ef_directory_st   xDir;
+      /* Set volume pxLabel */
+      xDir.xObject.pxFS = pxFS;
+      /* Open root directory */
+      xDir.xObject.u32ClstStart = 0;
+
+      if ( EF_RET_OK != eEFPrvDirectoryIndexSet( &xDir, 0 ) )
       {
-        eRetVal = EF_RET_OK;
-        /* Create a volume Label entry */
-        if ( 0 == u32Index )
-        {
-          EF_CODE_COVERAGE( );
-        }
-        /* Else, if allocate an entry failed */
-        else if ( EF_RET_OK !=  eEFPrvDirectoryAllocate( &xDir, 1 ) )
-        {
-          eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
-        }
-        /* Else, if the entry cleaning failed */
-        else if ( EF_RET_OK !=  eEFPortMemZero( xDir.pu8Dir, EF_DIR_ENTRY_SIZE ) )
-        {
-          eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
-        }
-        else
-        {
-          /* Create volume Label entry */
-          xDir.pu8Dir[ EF_DIR_ATTRIBUTES ] = EF_DIR_ATTRIB_BIT_VOLUME_ID;
-          (void) eEFPortMemCopy( u8Buffer, xDir.pu8Dir, 11 );
-          pxFS->u8WinFlags = EF_FS_WIN_DIRTY;
-          eRetVal = eEFPrvFSSync( pxFS );
-        }
+        eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
       }
       else
       {
-        EF_CODE_COVERAGE( );
+        /* Get volume Label entry */
+        eRetVal = DIR_READ_LABEL( &xDir );
+        /* If an entry was found */
+        if ( EF_RET_OK == eRetVal )
+        {
+          if ( 0 != u32Index )
+          {
+            /* Change the volume pxLabel */
+            eEFPortMemCopy( u8Buffer, xDir.pu8Dir, 11 );
+          }
+          else
+          {
+            /* Remove the volume pxLabel */
+            xDir.pu8Dir[ EF_DIR_NAME_START ] = EF_DIR_DELETED_MASK;
+          }
+          pxFS->u8WinFlags = EF_FS_WIN_DIRTY;
+          if ( EF_RET_OK != eEFPrvFSSync( pxFS ) )
+          {
+            eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
+          }
+          else
+          {
+            EF_CODE_COVERAGE( );
+          }
+        }
+        /* Else, if No volume Label entry */
+        else if ( EF_RET_NO_FILE == eRetVal)
+        {
+          eRetVal = EF_RET_OK;
+          /* Create a volume Label entry */
+          if ( 0 == u32Index )
+          {
+            EF_CODE_COVERAGE( );
+          }
+          /* Else, if allocate an entry failed */
+          else if ( EF_RET_OK !=  eEFPrvDirectoryAllocate( &xDir, 1 ) )
+          {
+            eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
+          }
+          /* Else, if the entry cleaning failed */
+          else if ( EF_RET_OK !=  eEFPortMemZero( xDir.pu8Dir, EF_DIR_ENTRY_SIZE ) )
+          {
+            eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
+          }
+          else
+          {
+            /* Create volume Label entry */
+            xDir.pu8Dir[ EF_DIR_ATTRIBUTES ] = EF_DIR_ATTRIB_BIT_VOLUME_ID;
+            (void) eEFPortMemCopy( u8Buffer, xDir.pu8Dir, 11 );
+            pxFS->u8WinFlags = EF_FS_WIN_DIRTY;
+            if ( EF_RET_OK != eEFPrvFSSync( pxFS ) )
+            {
+              eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
+            }
+            else
+            {
+              EF_CODE_COVERAGE( );
+            }
+          }
+        }
+        else
+        {
+          EF_CODE_COVERAGE( );
+        }
       }
     }
   }

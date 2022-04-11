@@ -60,36 +60,6 @@ ef_return_et eEF_utime (
   EF_ASSERT_PUBLIC( 0 != pxPath );
   EF_ASSERT_PUBLIC( 0 != pxFileInfo );
 
-//  ef_return_et      eRetVal;
-//  ef_directory_st   xDir;
-//  ef_fs_st        * pxFS;
-//  EF_LFN_BUFFER_DEFINE
-//
-//
-//  /* Get logical drive */
-//  eRetVal = eEFPrvVolumeMountCheck( &pxPath, &pxFS );
-//  if ( EF_RET_OK == eRetVal )
-//  {
-//    xDir.xObject.pxFS = pxFS;
-//    eRetVal = EF_LFN_BUFFER_SET( pxFS );
-//    /* Follow the file path */
-//    eRetVal = eEFPrvPathFollow( pxPath, &xDir );
-//
-//    /* Check object validity */
-//    if (    ( EF_RET_OK == eRetVal )
-//         && ( 0 != ( ( EF_NS_DOT | EF_NS_NONAME ) & xDir.u8Name[ EF_NSFLAG ] ) ) )
-//    {
-//      eRetVal = EF_RET_INVALID_NAME;
-//    }
-//    if ( EF_RET_OK == eRetVal )
-//    {
-//      vEFPortStoreu32( xDir.pu8Dir + EF_DIR_TIME_MODIFIED, (ef_u32_t)pxFileInfo->u16Date << 16 | pxFileInfo->u16Time );
-//      pxFS->u8WinFlags = EF_FS_WIN_DIRTY;
-//      eRetVal = eEFPrvFSSync( pxFS );
-//    }
-//    EF_LFN_BUFFER_FREE( );
-//  }
-
   ef_return_et  eRetVal = EF_RET_OK;
   ef_fs_st    * pxFS;
 
@@ -99,6 +69,8 @@ ef_return_et eEF_utime (
   }
   else
   {
+    ef_return_et  eResult;
+
     ef_directory_st xDir;
 
     EF_LFN_BUFFER_DEFINE
@@ -111,18 +83,25 @@ ef_return_et eEF_utime (
       eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
     }
     /* Else, if following file path failed */
-    else if ( EF_RET_OK != eEFPrvPathFollow( pxPath, &xDir ) )
+    else if ( EF_RET_OK != eEFPrvPathFollow( pxPath, &xDir, &eResult ) )
+    {
+      eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_INVALID_NAME );
+    }
+    else if ( EF_RET_OK != eResult )
     {
       eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_INVALID_NAME );
     }
     /* Else, if it is dot entry or no name */
-    else if ( 0 != ( (EF_NS_DOT | EF_NS_NONAME) & xDir.u8Name[ EF_NSFLAG ] ) )
+    else if ( 0 != ( ( EF_NS_DOT | EF_NS_NONAME ) & xDir.u8Name[ EF_NSFLAG ] ) )
     {
       eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_INVALID_NAME );
     }
+    else if ( EF_RET_OK != eEFPortStoreu32( xDir.pu8Dir + EF_DIR_TIME_MODIFIED, (ef_u32_t)pxFileInfo->u16Date << 16 | pxFileInfo->u16Time ) )
+    {
+      eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
+    }
     else
     {
-      vEFPortStoreu32( xDir.pu8Dir + EF_DIR_TIME_MODIFIED, (ef_u32_t)pxFileInfo->u16Date << 16 | pxFileInfo->u16Time );
       pxFS->u8WinFlags = EF_FS_WIN_DIRTY;
       if ( EF_RET_OK != eEFPrvFSSync( pxFS ) )
       {

@@ -56,8 +56,9 @@
 /* Public functions ------------------------------------------------------------------------------------------------ */
 /* Follow a file path */
 ef_return_et eEFPrvPathFollow (
-  const TCHAR *     pxPath, /* Full-path string to find a file or directory */
-  ef_directory_st * pxDir   /* Directory object to return last directory and found object */
+  const TCHAR     * pxPath,
+  ef_directory_st * pxDir,
+  ef_return_et    * peResult
 )
 {
   EF_ASSERT_PRIVATE( 0 != pxPath );
@@ -110,10 +111,12 @@ ef_return_et eEFPrvPathFollow (
       eRetVal = eEFPrvDirFind( pxDir );
       if ( EF_RET_NO_FILE == eRetVal )
       {
+        *peResult = eRetVal;
         EF_CODE_COVERAGE( );
       }
       else if ( EF_RET_OK == eRetVal )
       {
+        *peResult = eRetVal;
         EF_CODE_COVERAGE( );
       }
       else

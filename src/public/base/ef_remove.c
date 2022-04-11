@@ -75,6 +75,7 @@ ef_return_et eEF_remove (
   {
     ef_directory_st   xDir;
     ef_u32_t          u32DirCluster = 0;
+    ef_return_et      eResult;
 
     EF_LFN_BUFFER_DEFINE
 
@@ -86,7 +87,11 @@ ef_return_et eEF_remove (
       eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
     }
     /* Else, if following file path failed */
-    else if ( EF_RET_OK != eEFPrvPathFollow( pxPath, &xDir ) )
+    else if ( EF_RET_OK != eEFPrvPathFollow( pxPath, &xDir, &eResult ) )
+    {
+      eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_INVALID_NAME );
+    }
+    else if ( EF_RET_OK != eResult )
     {
       eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_INVALID_NAME );
     }

@@ -65,8 +65,10 @@ ef_return_et eEF_chdir (
   }
   else
   {
+    ef_directory_st xDir;
+    ef_return_et    eResult;
+
     EF_LFN_BUFFER_DEFINE
-    ef_directory_st   xDir;
 
     xDir.xObject.pxFS = pxFS;
 
@@ -76,7 +78,11 @@ ef_return_et eEF_chdir (
       eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
     }
     /* Else, if following file path failed */
-    else if ( EF_RET_OK != eEFPrvPathFollow( pxPath, &xDir ) )
+    else if ( EF_RET_OK != eEFPrvPathFollow( pxPath, &xDir, &eResult ) )
+    {
+      eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_INVALID_NAME );
+    }
+    else if ( EF_RET_OK != eResult )
     {
       eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_INVALID_NAME );
     }
@@ -86,7 +92,7 @@ ef_return_et eEF_chdir (
       pxFS->u32DirClstCurrent = xDir.xObject.u32ClstStart;
     }
     /* Else, if it is not a sub-directory */
-    else if ( 0 != ( xDir.xObject.u8Attrib & EF_DIR_ATTRIB_BIT_DIRECTORY ) )
+    else if ( 0 != ( EF_DIR_ATTRIB_BIT_DIRECTORY & xDir.xObject.u8Attrib ) )
     {
       /* Reached but a file */
       eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_NO_PATH );
