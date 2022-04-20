@@ -50,7 +50,7 @@ ef_return_et eEF_findnext (
   EF_ASSERT_PUBLIC( 0 != pxDir );
   EF_ASSERT_PUBLIC( 0 != pxFileInfo );
 
-  ef_return_et eRetVal;
+  ef_return_et eRetVal = EF_RET_OK;
 
   for ( ; ; )
   {

@@ -72,7 +72,6 @@ ef_return_et eEF_dirclose (
   }
   else if ( 0 == pxDir->xObject.u32LockId )
   {
-    EF_CODE_COVERAGE( );
     /* Invalidate directory object */
     pxDir->xObject.pxFS = 0;
   }

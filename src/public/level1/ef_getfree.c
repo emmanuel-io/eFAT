@@ -77,10 +77,7 @@ ef_return_et eEF_getfree (
   }
   else
   {
-    ef_u32_t  u32ClusterCounter;
-    ef_u32_t  u32Status;
-    ef_lba_t  xSector;
-    ef_u32_t  i;
+    ef_u32_t  u32ClusterCounter = 0;
 
     /* If u32ClstFreeNb is valid, return it without full FAT scan */
     if ( pxFS->u32ClstFreeNb <= ( pxFS->u32FatEntriesNb - 2 ) )
@@ -90,13 +87,13 @@ ef_return_et eEF_getfree (
     else
     {
       ef_object_st  xObject;
-      /* Scan FAT to obtain number of free clusters */
-      u32ClusterCounter = 0;
 
       /* If filesystem is FAT12: Scan bit field FAT entries */
       if ( 0 != ( EF_FS_FAT12 & pxFS->u8FsType ) )
       {
+        ef_u32_t  u32Status;
         xObject.pxFS = pxFS;
+
         /* FAT12: Scan bit field FAT entries */
         for ( ef_u32_t u32Cluster = 2 ; u32Cluster < pxFS->u32FatEntriesNb ; u32Cluster++ )
         {
@@ -114,45 +111,43 @@ ef_return_et eEF_getfree (
       /* Else FAT16/32: Scan ef_u16_t/ef_u32_t FAT entries */
       else
       {
-        ef_object_st  xObject;
-        ef_u32_t      clst;
-        {
-          clst    = pxFS->u32FatEntriesNb;  /* Number of entries */
-          xSector = pxFS->xFatBase;         /* Top of the FAT */
-          i = 0;          /* Offset in the sector */
-          do {  /* Counts number of entries with zero in the FAT */
-            if ( 0 == i )
+        xSector = pxFS->xFatBase; /* Top of the FAT */
+        ef_u32_t  i = 0;          /* Offset in the sector */
+        ef_lba_t  xSector;
+        /* For all clusters in FileSystem */
+        for ( ef_u32_t u32Cluster  = pxFS->u32FatEntriesNb ; 0 != u32Cluster ; --u32Cluster )
+        {  /* Counts number of entries with zero in the FAT */
+          if ( 0 == i )
+          {
+            if ( EF_RET_OK != eEFPrvFSWindowLoad( pxFS, xSector++ ) )
             {
-              if ( EF_RET_OK != eEFPrvFSWindowLoad( pxFS, xSector++ ) )
-              {
-                eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
-                break;
-              }
+              eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
+              break;
             }
-            if ( 0 != ( EF_FS_FAT16 & pxFS->u8FsType ) )
+          }
+          if ( 0 != ( EF_FS_FAT16 & pxFS->u8FsType ) )
+          {
+            if ( 0 == u16EFPortLoad(pxFS->pu8Window + i) )
             {
-              if ( 0 == u16EFPortLoad(pxFS->pu8Window + i) )
-              {
-                u32ClusterCounter++;
-              }
-              i += 2;
+              u32ClusterCounter++;
             }
-            else //if ( 0 != ( EF_FS_FAT16 & pxFS->u8FsType ) )
+            i += 2;
+          }
+          else //if ( 0 != ( EF_FS_FAT16 & pxFS->u8FsType ) )
+          {
+            if ( 0 == (u32EFPortLoad(pxFS->pu8Window + i) & 0x0FFFFFFF) )
             {
-              if ( 0 == (u32EFPortLoad(pxFS->pu8Window + i) & 0x0FFFFFFF) )
-              {
-                u32ClusterCounter++;
-              }
-              i += 4;
+              u32ClusterCounter++;
             }
-            i %= EF_SECTOR_SIZE( pxFS );
-          } while (--clst);
+            i += 4;
+          }
+          i %= EF_SECTOR_SIZE( pxFS );
         }
       }
-      /* Return the free clusters */
-      *pu32ClusterNb = u32ClusterCounter;
       /* Now u32ClstFreeNb is valid */
       pxFS->u32ClstFreeNb = u32ClusterCounter;
+      /* Return the free clusters */
+      *pu32ClusterNb = u32ClusterCounter;
       /* FAT32: FSInfo is to be updated */
       pxFS->u8FsInfoFlags |= 1;
     }

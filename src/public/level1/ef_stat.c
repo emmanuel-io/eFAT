@@ -72,7 +72,6 @@ ef_return_et eEF_stat (
     ef_directory_st xDir;
     ef_return_et    eResult;
 
-
     EF_LFN_BUFFER_DEFINE
 
     xDir.xObject.pxFS = pxFS;

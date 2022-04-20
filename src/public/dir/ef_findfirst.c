@@ -54,14 +54,23 @@ ef_return_et eEF_findfirst (
   EF_ASSERT_PUBLIC( 0 != pxPath );
   EF_ASSERT_PUBLIC( 0 != pxPattern );
 
+  ef_return_et  eRetVal = EF_RET_OK;
+
   /* Save pointer to pattern string */
   pxDir->pxPattern = pxPattern;
   /* Open the target directory */
-  ef_return_et eRetVal = eEF_diropen( pxDir, pxPath );
-  if ( EF_RET_OK == eRetVal )
+  if ( EF_RET_OK != eRetVal = eEF_diropen( pxDir, pxPath ) )
   {
-    /* Find the first item */
-    eRetVal = eEF_findnext( pxDir, pxFileInfo );
+    eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
+  }
+  /* Find the first item */
+  else if ( EF_RET_OK != eEF_findnext( pxDir, pxFileInfo ) )
+  {
+    eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
+  }
+  else
+  {
+    EF_CODE_COVERAGE( );
   }
   return eRetVal;
 }

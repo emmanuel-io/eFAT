@@ -63,7 +63,7 @@ ef_return_et eEF_diropen (
   EF_ASSERT_PUBLIC( 0 != pxDir );
   EF_ASSERT_PUBLIC( 0 != pxPath );
 
-  ef_return_et  eRetVal;
+  ef_return_et  eRetVal = EF_RET_OK;
   ef_fs_st    * pxFS;
   EF_LFN_BUFFER_DEFINE
 
@@ -94,46 +94,56 @@ ef_return_et eEF_diropen (
     }
     else if ( EF_RET_NO_FILE == eResult )
     {
-      eRetVal = EF_RET_NO_PATH;
+      eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_NO_PATH );
     }
-    /* Follow completed */
-    else if ( EF_RET_OK == eResult )
+    else if ( EF_RET_OK != eResult )
     {
+      eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
+    }
+    else
+    { /* Follow completed */
       /* It is not the origin directory itself */
       if ( 0 == ( EF_NS_NONAME & pxDir->u8Name[EF_NSFLAG] ) )
       {
-        /* This object is a sub-directory */
-        if ( 0 != (pxDir->xObject.u8Attrib & EF_DIR_ATTRIB_BIT_DIRECTORY) )
+        /* This object is not a sub-directory */
+        if ( 0 == (pxDir->xObject.u8Attrib & EF_DIR_ATTRIB_BIT_DIRECTORY) )
+        {
+          /* This object is a file */
+          eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_NO_PATH );
+        }
+        else
         {
           /* Get object allocation info */
           if ( EF_RET_OK != eEFPrvDirectoryClusterGet( pxFS, pxDir->pu8Dir, &(pxDir->xObject.u32ClstStart) ) )
           {
-            eRetVal = EF_RET_INT_ERR;
+            eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_INT_ERR );
           }
           else
           {
             EF_CODE_COVERAGE( );
           }
-          //pxDir->xObject.u32ClstStart = eEFPrvDirectoryClusterGet( pxFS, pxDir->pu8Dir );
-        }
-        else
-        {
-          /* This object is a file */
-          eRetVal = EF_RET_NO_PATH;
         }
       }
-      if ( EF_RET_OK == eRetVal )
+      if ( EF_RET_OK != eRetVal )
+      {
+        eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
+      }
+      else
       {
         pxDir->xObject.u16MountId = pxFS->u16MountId;
-        eRetVal = eEFPrvDirectoryIndexSet( pxDir, 0 );      /* Rewind directory */
-        if ( EF_RET_OK == eRetVal )
+        /* Rewind directory */
+        if ( EF_RET_OK != eEFPrvDirectoryIndexSet( pxDir, 0 ) )
+        {
+          eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
+        }
+        else
         {
           if ( 0 != pxDir->xObject.u32ClstStart )
           {
             (void) eEFPrvLockInc( pxDir, 0, &(pxDir->xObject.u32LockId) );  /* Lock the sub directory */
             if ( 0 == pxDir->xObject.u32LockId )
             {
-              eRetVal = EF_RET_TOO_MANY_OPEN_FILES;
+              eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_TOO_MANY_OPEN_FILES );
             }
             else
             {
@@ -145,20 +155,8 @@ ef_return_et eEF_diropen (
             pxDir->xObject.u32LockId = 0;  /* Root directory need not to be locked */
           }
         }
-        else
-        {
-          EF_CODE_COVERAGE( );
-        }
       }
-      else
-      {
-        EF_CODE_COVERAGE( );
-      }
-    }
-    else
-    {
-      EF_CODE_COVERAGE( );
-    }
+    } /* Follow completed */
     EF_LFN_BUFFER_FREE();
   }
   if ( EF_RET_OK != eRetVal )

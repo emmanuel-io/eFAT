@@ -74,12 +74,7 @@ ef_return_et eEF_dirmake (
   else
   {
     ef_directory_st xDir;
-    ef_object_st xSyncObject;
-    ef_u32_t       dcl;
-    ef_u32_t       pcl;
-    ef_u32_t       tm;
-    ef_return_et  eResult;
-
+    ef_return_et    eResult;
 
     EF_LFN_BUFFER_DEFINE
 
@@ -110,6 +105,11 @@ ef_return_et eEF_dirmake (
     /* Else, if it is clear to create a new directory */
     else if ( EF_RET_NO_FILE == eResult )
     {
+      ef_object_st    xSyncObject;
+      ef_u32_t        dcl;
+      ef_u32_t        pcl;
+      ef_u32_t        tm;
+
       /* New object u16MountId to create a new chain */
       xSyncObject.pxFS = pxFS;
       /* Allocate a cluster for the new directory */
@@ -120,16 +120,6 @@ ef_return_et eEF_dirmake (
       {
         eRetVal = EF_RET_DENIED;
       }
-//      /* Else, if Any insanity */
-//      else if ( 1 == dcl )
-//      {
-//        eRetVal = EF_RET_INT_ERR;
-//      }
-//      /* Else, if Disk error */
-//      else if ( 0xFFFFFFFF == dcl )
-//      {
-//        eRetVal = EF_RET_DISK_ERR;
-//      }
       /* Clean up the new table */
       if ( EF_RET_OK != eEFPrvDirectoryClusterClear( pxFS, dcl ) )
       {
