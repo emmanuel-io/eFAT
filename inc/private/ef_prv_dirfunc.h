@@ -1,11 +1,11 @@
 /**
  * ********************************************************************************************************************
- *  @file     ef_prv_dirfunc.h
+ *  @file     ef_prv_dirfunc_fat.h
  *  @ingroup  group_eFAT_Private
  *  @author   ChaN
  *  @author   Emmanuel AMADIO
  *  @version  V0.1
- *  @brief    Private Header file.
+ *  @brief    Private Header file for FAT directory functions.
  *
  * ********************************************************************************************************************
  *  eFAT - embedded FAT Filesystem module
@@ -26,8 +26,8 @@
  */
 
 /* START OF FILE *************************************************************************************************** */
-#ifndef EFAT_PRIVATE_DIR_FUNCTIONS_H
-#define EFAT_PRIVATE_DIR_FUNCTIONS_H
+#ifndef EFAT_PRIVATE_DIR_FUNCTIONS_FAT_H
+#define EFAT_PRIVATE_DIR_FUNCTIONS_FAT_H
 
 #ifdef __cplusplus
   extern "C" {
@@ -36,11 +36,9 @@
 
 
 /* Includes -------------------------------------------------------------------------------------------------------- */
-#include <efat.h>
-#include "ef_port_diskio.h"
+#include <efat.h>             /* Declarations of eFAT API */
+#include "ef_port_diskio.h" /* Declarations of device I/O functions */
 #include "ef_prv_def.h"
-#include "ef_prv_dirfunc_fat.h"
-#include "ef_prv_dirfunc_vfat.h"
 /* Local constant macros ------------------------------------------------------------------------------------------- */
 /* Local function macros ------------------------------------------------------------------------------------------- */
 /* Local typedefs, structures, unions and enums -------------------------------------------------------------------- */
@@ -83,21 +81,9 @@
  *  @retval EF_RET_INVALID_PARAMETER    Given parameter is invalid
  */
 
-#if ( 0 != EF_CONF_VFAT )
-  /* LFN configuration */
-  #define eEFPrvDirRead( pxDir, vol ) eEFPrvDirReadVFAT( pxDir, vol )
-  #define DIR_READ_FILE(pxDir) eEFPrvDirRead(pxDir, 0)
-#else
-  /* SFN Only configuration */
-//  #define eEFPrvDirRead( pxDir, vol ) eEFPrvDirReadFAT( pxDir, vol )
-  #define DIR_READ_FILE(pxDir)  eEFPrvDirReadFAT(pxDir)
-#endif
-
-
-//ef_return_et eEFPrvDirRead (
-//  ef_directory_st* pxDir,
-//  int vol
-//);
+  ef_return_et eEFPrvDirRead (
+    ef_directory_st* pxDir
+  );
 
 /**
  *  @brief  Directory handling - Find an object in the directory
@@ -126,16 +112,10 @@
  *  @retval EF_RET_TOO_MANY_OPEN_FILES  Number of open files > EF_CONF_FILE_LOCK
  *  @retval EF_RET_INVALID_PARAMETER    Given parameter is invalid
  */
-#if ( 0 != EF_CONF_VFAT )
-  /* LFN configuration */
-  #define eEFPrvDirFind( pxDir ) eEFPrvDirFindVFAT( pxDir )
-#else
-  /* SFN Only configuration */
-  #define eEFPrvDirFind( pxDir ) eEFPrvDirFindFAT( pxDir )
-#endif
-//ef_return_et eEFPrvDirFind (
-//  ef_directory_st* pxDir
-//);
+ef_return_et eEFPrvDirFind (
+  ef_directory_st * pxDir,
+  ef_bool_t       * pbFound
+);
 
 /**
  *  @brief  Register an object to the directory
@@ -164,16 +144,9 @@
  *  @retval EF_RET_TOO_MANY_OPEN_FILES  Number of open files > EF_CONF_FILE_LOCK
  *  @retval EF_RET_INVALID_PARAMETER    Given parameter is invalid
  */
-#if ( 0 != EF_CONF_VFAT )
-  /* LFN configuration */
-  #define eEFPrvDirRegister( pxDir ) eEFPrvDirRegisterVFAT( pxDir )
-#else
-  /* SFN Only configuration */
-  #define eEFPrvDirRegister( pxDir ) eEFPrvDirRegisterFAT( pxDir )
-#endif
-//ef_return_et eEFPrvDirRegister (
-//  ef_directory_st* pxDir
-//);
+ef_return_et eEFPrvDirRegister (
+  ef_directory_st* pxDir
+);
 
 /**
  *  @brief  Remove an object from the directory
@@ -202,21 +175,14 @@
  *  @retval EF_RET_TOO_MANY_OPEN_FILES  Number of open files > EF_CONF_FILE_LOCK
  *  @retval EF_RET_INVALID_PARAMETER    Given parameter is invalid
  */
-#if ( 0 != EF_CONF_VFAT )
-  /* LFN configuration */
-  #define eEFPrvDirRemove( pxDir ) eEFPrvDirRemoveVFAT( pxDir )
-#else
-  /* SFN Only configuration */
-  #define eEFPrvDirRemove( pxDir ) eEFPrvDirRemoveFAT( pxDir )
-#endif
-//ef_return_et eEFPrvDirRemove (  /* EF_RET_OK:Succeeded, EF_RET_DISK_ERR:A disk error */
-//  ef_directory_st* pxDir          /* Directory object pointing the entry to be removed */
-//);
+ef_return_et eEFPrvDirRemove (  /* EF_RET_OK:Succeeded, EF_RET_DISK_ERR:A disk error */
+  ef_directory_st* pxDir          /* Directory object pointing the entry to be removed */
+);
 
 /* ***************************************************************************************************************** */
 #ifdef __cplusplus
 }
 #endif
-#endif /* EFAT_PRIVATE_DIR_FUNCTIONS_H */
+#endif /* EFAT_PRIVATE_DIR_FUNCTIONS_FAT_H */
 /* END OF FILE ***************************************************************************************************** */
 

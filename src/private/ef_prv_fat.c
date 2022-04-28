@@ -86,13 +86,13 @@ static ef_return_et eEFPrvFATClusterFindFree (
   EF_ASSERT_PRIVATE( 0 != pxObject );
   EF_ASSERT_PRIVATE( 0 != pu32Cluster );
 
-  ef_return_et  eRetVal = EF_RET_FAT_FULL; /* By default, FAT is full */
+  ef_return_et  eRetVal = EF_RET_OK;
   ef_fs_st    * pxFS = pxObject->pxFS;
 
   /* Check if in valid range */
   if ( EF_RET_OK !=  eEFPrvFATClusterNbCheck ( pxFS->u32FatEntriesNb, u32Cluster ) )
   {
-    eRetVal = EF_RET_INT_ERR;
+    eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_INT_ERR );
   }
   else
   {
@@ -120,10 +120,10 @@ static ef_return_et eEFPrvFATClusterFindFree (
     while ( u32ClusterStop != u32Cluster )
     {
       /* Get the cluster status */
-      eRetVal = eEFPrvFATGet( pxFS, u32Cluster, &u32ClusterValue );
       /* If an error occured */
-      if ( EF_RET_OK != eRetVal )
+      if ( EF_RET_OK != eEFPrvFATGet( pxFS, u32Cluster, &u32ClusterValue ) )
       {
+        eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_INT_ERR );
         /* Return immediately */
         break;
       }
@@ -132,24 +132,34 @@ static ef_return_et eEFPrvFATClusterFindFree (
       {
         /* Return new cluster number or error status */
         *pu32Cluster = u32Cluster;
-        eRetVal = EF_RET_OK;
         break;
       }
       else
       {
-        ; /* Keep Looping */
-      }
-      u32Cluster++;
-      if ( pxFS->u32FatEntriesNb < u32Cluster )
-      {
-        /* Stop just before the end of the FAT */
-        u32Cluster = 2;
-      }
-      else
-      {
-        EF_CODE_COVERAGE( );
+        /* Keep Looping */
+        u32Cluster++;
+        if ( pxFS->u32FatEntriesNb < u32Cluster )
+        {
+          /* Stop just before the end of the FAT */
+          u32Cluster = 2;
+        }
+        else
+        {
+          EF_CODE_COVERAGE( );
+        }
       }
     } /* Loop through the FAT */
+
+    if ( u32ClusterStop == u32Cluster )
+    {
+      /* By default, FAT is full */
+      eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_FAT_FULL );
+    }
+    else
+    {
+      EF_CODE_COVERAGE( );
+    }
+
   }
   /* If no free cluster was found or an error occured */
   if ( EF_RET_OK != eRetVal )
@@ -262,7 +272,7 @@ ef_return_et eEFPrvFATClusterToSector (
   }
   else
   {
-    eRetVal = EF_RET_ERROR;
+    eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
   }
 
   *pxSector = xSector;
@@ -286,66 +296,62 @@ ef_return_et eEFPrvFATGet (
   /* If Cluster not in valid range */
   if ( EF_RET_OK != eEFPrvFATClusterNbCheck( pxFS->u32FatEntriesNb, u32Cluster ) )
   {
-    eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_INT_ERR );  /* Internal error */
+    eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_INT_ERR );
   }
   else if ( 0 != ( EF_FS_FAT32 & pxFS->u8FsType ) )
   {
+
     /* Load the FS window with the sector containing the FAT Cluster Number */
-    if ( EF_RET_OK == eEFPrvFSWindowLoad(  pxFS,
+    if ( EF_RET_OK != eEFPrvFSWindowLoad(  pxFS,
                                            pxFS->xFatBase
                                          + ( u32Cluster / (EF_SECTOR_SIZE( pxFS ) / 4 ) ) ) )
     {
-      /* Simple ef_u32_t array but mask out upper 4 bits */
-      *pu32Value = 0x0FFFFFFF & u32EFPortLoad(  pxFS->pu8Window
-                                        + u32Cluster * 4 % EF_SECTOR_SIZE( pxFS ) );
+      eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_INT_ERR );
     }
     else
     {
-      eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_INT_ERR );
+      /* Simple ef_u32_t array but mask out upper 4 bits */
+      *pu32Value = 0x0FFFFFFF & u32EFPortLoad(  pxFS->pu8Window + u32Cluster * 4 % EF_SECTOR_SIZE( pxFS ) );
     }
 
   }
   else if ( 0 != ( EF_FS_FAT16 & pxFS->u8FsType ) )
   {
+
     /* Load the FS window with the sector containing the FAT Cluster Number */
-    if ( EF_RET_OK == eEFPrvFSWindowLoad(  pxFS,
+    if ( EF_RET_OK != eEFPrvFSWindowLoad(  pxFS,
                                    pxFS->xFatBase
                                  + ( u32Cluster / (EF_SECTOR_SIZE( pxFS ) / 2 ) ) ) )
     {
-      /* Simple ef_u16_t array */
-      *pu32Value = u16EFPortLoad(pxFS->pu8Window + u32Cluster * 2 % EF_SECTOR_SIZE( pxFS ));
+      eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_INT_ERR );
     }
     else
     {
-      eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_INT_ERR );
+      *pu32Value = u16EFPortLoad(pxFS->pu8Window + u32Cluster * 2 % EF_SECTOR_SIZE( pxFS ));
     }
+
   }
   else if ( 0 != ( EF_FS_FAT12 & pxFS->u8FsType ) )
   {
-//    eRetVal = EF_RET_INT_ERR;
 
     ef_u32_t  u32ByteOffset = u32Cluster;
     u32ByteOffset += u32ByteOffset / 2;
-    eRetVal = eEFPrvFSWindowLoad( pxFS,
-                                  pxFS->xFatBase
-                                  + ( u32ByteOffset / EF_SECTOR_SIZE( pxFS ) ) );
-    if ( EF_RET_OK != eRetVal )
+    if ( EF_RET_OK != eEFPrvFSWindowLoad( pxFS,
+                                          pxFS->xFatBase
+                                          + ( u32ByteOffset / EF_SECTOR_SIZE( pxFS ) ) ) )
     {
       eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_INT_ERR );
-      EF_CODE_COVERAGE( );
     }
     else
     {
       /* Get 1st byte of the entry */
       ef_u16_t  u16Value = (ef_u16_t) pxFS->pu8Window[ u32ByteOffset++ % EF_SECTOR_SIZE( pxFS ) ];
       /* Load FSWindow to access 2nd byte of the entry */
-      eRetVal = eEFPrvFSWindowLoad( pxFS,
-                                    pxFS->xFatBase
-                                    + ( u32ByteOffset / EF_SECTOR_SIZE( pxFS ) ) );
-      if ( EF_RET_OK != eRetVal )
+      if ( EF_RET_OK != eEFPrvFSWindowLoad( pxFS,
+                                            pxFS->xFatBase
+                                            + ( u32ByteOffset / EF_SECTOR_SIZE( pxFS ) ) ) )
       {
         eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_INT_ERR );
-        EF_CODE_COVERAGE( );
       }
       else
       {
@@ -366,7 +372,7 @@ ef_return_et eEFPrvFATGet (
   }
   else
   {
-    eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_INT_ERR );  /* Internal error */
+    eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_INT_ERR );
   }
 
   return eRetVal;
@@ -387,17 +393,20 @@ ef_return_et eEFPrvFATSet (
   /* If Cluster not in valid range */
   if ( EF_RET_OK != eEFPrvFATClusterNbCheck( pxFS->u32FatEntriesNb, u32Cluster ) )
   {
-    EF_CODE_COVERAGE( );
+    eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_INT_ERR );
   }
   else if ( 0 != ( EF_FS_FAT32 & pxFS->u8FsType ) )
   {
-    eRetVal = EF_RET_INT_ERR;
+    eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_INT_ERR );
 
       /* Load the FS window with the sector containing the FAT Cluster Number */
-      eRetVal = eEFPrvFSWindowLoad(   pxFS,
-                                      pxFS->xFatBase
-                                    + ( u32Cluster / ( EF_SECTOR_SIZE( pxFS ) / 4) ) );
-      if ( EF_RET_OK == eRetVal )
+      if ( EF_RET_OK != eEFPrvFSWindowLoad(   pxFS,
+                                              pxFS->xFatBase
+                                            + ( u32Cluster / ( EF_SECTOR_SIZE( pxFS ) / 4) ) ) )
+      {
+        eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_INT_ERR );
+      }
+      else
       {
         u32NewValue =   ( u32NewValue & 0x0FFFFFFF )
                       | (   u32EFPortLoad( pxFS->pu8Window + u32Cluster * 4 % EF_SECTOR_SIZE( pxFS ) )
@@ -405,41 +414,39 @@ ef_return_et eEFPrvFATSet (
         vEFPortStoreu32( pxFS->pu8Window + u32Cluster * 4 % EF_SECTOR_SIZE( pxFS ), u32NewValue );
         pxFS->u8WinFlags = EF_FS_WIN_DIRTY;
       }
-      else
-      {
-        eRetVal = EF_RET_INT_ERR;  /* Internal error */
-      }
+
   }
   else if ( 0 != ( EF_FS_FAT16 & pxFS->u8FsType ) )
   {
-    eRetVal = EF_RET_INT_ERR;
 
       /* Load the FS window with the sector containing the FAT Cluster Number */
-      eRetVal = eEFPrvFSWindowLoad( pxFS,
-                                      pxFS->xFatBase
-                                    + ( u32Cluster / ( EF_SECTOR_SIZE( pxFS ) / 2 ) ) );
-      if ( EF_RET_OK == eRetVal )
+      if ( EF_RET_OK != eEFPrvFSWindowLoad( pxFS,
+                                            pxFS->xFatBase
+                                          + ( u32Cluster / ( EF_SECTOR_SIZE( pxFS ) / 2 ) ) ) )
+      {
+        eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_INT_ERR );
+      }
+      else
       {
         /* Simple ef_u16_t array */
         vEFPortStoreu16(  pxFS->pu8Window + u32Cluster * 2 % EF_SECTOR_SIZE( pxFS ),
                     (ef_u16_t)u32NewValue );
         pxFS->u8WinFlags = EF_FS_WIN_DIRTY;
       }
-      else
-      {
-        EF_CODE_COVERAGE( );
-      }
+
   }
   else if ( 0 != ( EF_FS_FAT12 & pxFS->u8FsType ) )
   {
-    eRetVal = EF_RET_INT_ERR;
 
     /* u32ByteOffset: byte offset of the entry */
     ef_u32_t u32ByteOffset = u32Cluster;
     /* Multiply offset by 1.5 (12 bits fat entries) */
     u32ByteOffset += u32ByteOffset / 2;
-    eRetVal = eEFPrvFSWindowLoad( pxFS, pxFS->xFatBase + ( u32ByteOffset / EF_SECTOR_SIZE( pxFS ) ) );
-    if ( EF_RET_OK == eRetVal )
+    if ( EF_RET_OK != eEFPrvFSWindowLoad( pxFS, pxFS->xFatBase + ( u32ByteOffset / EF_SECTOR_SIZE( pxFS ) ) ) )
+    {
+      eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_INT_ERR );
+    }
+    else
     {
       ef_u08_t * p = pxFS->pu8Window + ( u32ByteOffset++ % EF_SECTOR_SIZE( pxFS ) );
       /* Update 1st byte */
@@ -452,8 +459,12 @@ ef_return_et eEFPrvFATSet (
         *p = (ef_u08_t) u32NewValue;
       }
       pxFS->u8WinFlags = EF_FS_WIN_DIRTY;
-      eRetVal = eEFPrvFSWindowLoad( pxFS, pxFS->xFatBase + ( u32ByteOffset / EF_SECTOR_SIZE( pxFS ) ) );
-      if ( EF_RET_OK == eRetVal )
+
+      if ( EF_RET_OK != eEFPrvFSWindowLoad( pxFS, pxFS->xFatBase + ( u32ByteOffset / EF_SECTOR_SIZE( pxFS ) ) ) )
+      {
+        eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_INT_ERR );
+      }
+      else
       {
         p = pxFS->pu8Window + u32ByteOffset % EF_SECTOR_SIZE( pxFS );
         /* Update 2nd byte */
@@ -467,20 +478,12 @@ ef_return_et eEFPrvFATSet (
         }
         pxFS->u8WinFlags = EF_FS_WIN_DIRTY;
       }
-      else
-      {
-        EF_CODE_COVERAGE( );
-      }
-    }
-    else
-    {
-      eRetVal = EF_RET_INT_ERR;  /* Internal error */
     }
 
   }
   else
   {
-    eRetVal = EF_RET_INT_ERR;  /* Internal error */
+    eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_INT_ERR );
   }
 
   return eRetVal;
@@ -669,7 +672,7 @@ ef_return_et eEFPrvFATChainRemove (
   /* Check if in valid range */
   if ( EF_RET_OK != eEFPrvFATClusterNbCheck( pxFS->u32FatEntriesNb, u32Cluster ) )
   {
-    eRetVal = EF_RET_INT_ERR;
+    eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_INT_ERR );
   }
   else
   {
@@ -759,13 +762,13 @@ ef_return_et eEFPrvFATChainCreate (
   EF_ASSERT_PRIVATE( 0 != pxObject );
   EF_ASSERT_PRIVATE( 0 != pu32Cluster );
 
-  ef_return_et  eRetVal = EF_RET_OK; /* By default, FAT is full */
+  ef_return_et  eRetVal = EF_RET_OK;
   ef_fs_st    * pxFS = pxObject->pxFS;
 
   /* If there are no free clusters */
   if ( 0 == pxFS->u32ClstFreeNb )
   {
-    eRetVal = EF_RET_FAT_FULL;
+    eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_FAT_FULL );
   }
   else
   {
@@ -793,13 +796,13 @@ ef_return_et eEFPrvFATChainCreate (
     if ( EF_RET_OK != eEFPrvFATClusterFindFree( pxObject, u32Cluster, &u32ClusterNew ) )
     {
       /* No Free Cluster found */
-      eRetVal = EF_RET_FAT_FULL;
+      eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_FAT_FULL );
     }
     /* Else, if marking the new cluster as end of chain 'EOC' failed */
     else if ( EF_RET_OK != eEFPrvFATSet( pxFS, u32ClusterNew, EF_FAT_END_OF_CHAIN) )
     {
       /* No Free Cluster found */
-      eRetVal = EF_RET_INT_ERR;
+      eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_INT_ERR );
     }
     /* Else, all function succeeded. */
     else
@@ -844,13 +847,13 @@ ef_return_et eEFPrvFATChainStretch (
   if ( EF_RET_OK != eEFPrvFATGet( pxFS, u32Cluster, &u32ClusterValue ) )
   {
     /* There is an eror */
-    eRetVal = EF_RET_INT_ERR;
+    eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_INT_ERR );
   }
   /* Else, if we have an invalid linked cluster */
   else if ( 2 > u32ClusterValue )
   {
     /* There is an eror */
-    eRetVal = EF_RET_INT_ERR;
+    eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_INT_ERR );
   }
   /* Else, if we have a valid linked cluster */
   else if ( pxFS->u32FatEntriesNb >= u32ClusterValue )
@@ -860,13 +863,13 @@ ef_return_et eEFPrvFATChainStretch (
     if ( EF_RET_OK != eEFPrvFATGet( pxFS, u32ClusterNew, &u32ClusterValue ) )
     {
       /* There is an eror */
-      eRetVal = EF_RET_INT_ERR;
+      eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_INT_ERR );
     }
     /* Else, if we have an invalid linked cluster */
     else if ( 2 > u32ClusterValue )
     {
       /* There is an eror */
-      eRetVal = EF_RET_INT_ERR;
+      eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_INT_ERR );
     }
     else
     {
@@ -876,10 +879,19 @@ ef_return_et eEFPrvFATChainStretch (
       *pu32Cluster = u32ClusterNew;
     }
   }
+  else
+  {
+    EF_CODE_COVERAGE( );
+  }
   /* Else we have an End Of Chain cluster */
   /* If there are free clusters */
-  if ( 0 != pxFS->u32ClstFreeNb )
+  if ( 0 == pxFS->u32ClstFreeNb )
   //if ( pxFS->u32FatEntriesNb < u32ClusterValue )
+  {
+    /* There is an eror */
+    eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_INT_ERR );
+  }
+  else //if ( pxFS->u32FatEntriesNb < u32ClusterValue )
   {
     /* Stretching an existing chain? */
     /* Suggested cluster to start to find */
@@ -925,11 +937,6 @@ ef_return_et eEFPrvFATChainStretch (
       *pu32Cluster = u32ClusterNew;
     }
     /* SEARCH FOR A FREE CLUSTER END */
-  }
-  else //if ( pxFS->u32FatEntriesNb < u32ClusterValue )
-  {
-    /* There is an eror */
-    eRetVal = EF_RET_INT_ERR;
   }
 
   return eRetVal;

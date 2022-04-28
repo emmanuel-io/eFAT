@@ -146,15 +146,19 @@ ef_return_et eEFPrvDirectoryClusterClear (
         eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_INT_ERR );
         break;
       }
+      else
+      {
+        EF_CODE_COVERAGE( );
+      }
     }
-    if ( 0 != n )
-    {
-      eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_INT_ERR );
-    }
-    else
-    {
-      eRetVal = EF_RET_OK;
-    }
+//    if ( 0 != n )
+//    {
+//      eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_INT_ERR );
+//    }
+//    else
+//    {
+//      EF_CODE_COVERAGE( );
+//    }
   }
 
   return eRetVal;
@@ -174,7 +178,7 @@ ef_return_et eEFPrvDirectoryIndexSet (
   ef_fs_st    * pxFS = pxDir->xObject.pxFS;
 
   /* If offset out of range */
-  if ( (ef_u32_t)MAX_DIR <= u32Offset )
+  if ( (ef_u32_t) MAX_DIR <= u32Offset )
   {
     eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_FAT_ERROR );
   }
@@ -196,7 +200,7 @@ ef_return_et eEFPrvDirectoryIndexSet (
       u32Cluster = (ef_u32_t)pxFS->xDirBase;
     }
 
-    /* IF Cluster points to root directory */
+    /* If Cluster points to root directory */
     if ( 0 == u32Cluster )
     { /* Static table (root-directory on the FAT volume) */
       /* If index is out of range */
@@ -409,18 +413,18 @@ ef_return_et eEFPrvDirectoryAllocate (
   ef_u32_t          u32EntriesNb
 )
 {
+  EF_ASSERT_PRIVATE( 0 != pxDir );
+
   ef_return_et  eRetVal = EF_RET_OK;
   ef_fs_st    * pxFS = pxDir->xObject.pxFS;
 
-//  if ( EF_RET_OK != eEFPrvDirectoryIndexSet( pxDir, 0 ) )
   if ( EF_RET_OK != eEFPrvDirectoryIndexSet( pxDir, 0 ) )
   {
-    /* Reached to end */
     eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_FAT_ERROR );
   }
   else
   {
-    ef_u32_t n = 0;
+    ef_u32_t u32FreeEntriesCount = 0;
     do
     {
 
@@ -429,25 +433,30 @@ ef_return_et eEFPrvDirectoryAllocate (
         eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_INT_ERR );
         break;
       }
-      if (    ( EF_DIR_DELETED_MASK != pxDir->pu8Dir[ EF_DIR_NAME_START ] )
-           && ( 0 != pxDir->pu8Dir[ EF_DIR_NAME_START ] ) )
+      else if ( EF_DIR_DELETED_MASK == pxDir->pu8Dir[ EF_DIR_NAME_START ] )
       {
-        n = 0; /* Not a blank entry. Restart to search */
+        /* Deleted entry */
+        u32FreeEntriesCount++;
       }
-      else if ( u32EntriesNb == ++n )
+      else if ( 0 == pxDir->pu8Dir[ EF_DIR_NAME_START ] )
       {
-        break;  /* A block of contiguous free entries is found */
+        /* Blank entry */
+        u32FreeEntriesCount++;
       }
       else
       {
-        /* Keep searching */
-        EF_CODE_COVERAGE( );
+        u32FreeEntriesCount = 0; /* Not a blank entry. Restart to search */
       }
-
-      if ( EF_RET_OK != eEFPrvDirectoryIndexNext( pxDir, EF_BOOL_TRUE ) )
+      if ( u32EntriesNb == u32FreeEntriesCount )
+      {
+        break;  /* A block of contiguous free entries is found */
+      }
+      /* Keep searching */
+      else if ( EF_RET_OK != eEFPrvDirectoryIndexNext( pxDir, EF_BOOL_TRUE ) )
       {
         /* Reached to end */
         eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_FAT_ERROR );
+        break;
       }
       else
       {
@@ -458,11 +467,6 @@ ef_return_et eEFPrvDirectoryAllocate (
     } while ( EF_RET_OK == eRetVal );
   }
 
-  if ( EF_RET_NO_FILE == eRetVal )
-  {
-    /* No directory entry to allocate */
-    eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_DENIED );
-  }
   return eRetVal;
 }
 

@@ -94,7 +94,7 @@ ef_return_et eEFPrvGPTHeaderTest (
                                         "EFI PART" "\0\0\1\0" "\x5C\0\0", 16 ) )
   {
     ;  /* Error, we return */
-    eRetVal = EF_RET_ERROR;
+    eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
   }
   else
   {
@@ -117,19 +117,19 @@ ef_return_et eEFPrvGPTHeaderTest (
     if ( ~u32BCC != u32EFPortLoad( pu8GPTHeader + EF_GPT_HEADER_OFFSET_HEADER_CRC32 ) )
     {
       ; /* Invalid */
-      eRetVal = EF_RET_ERROR;
+      eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
     }
     /* Else, if Table entry size is wrong (must be EF_GPT_PTE_SIZE bytes) */
     else if ( EF_GPT_PTE_SIZE != u32EFPortLoad( pu8GPTHeader + EF_GPT_HEADER_OFFSET_PTE_SIZE ) )
     {
       ; /* Invalid */
-      eRetVal = EF_RET_ERROR;
+      eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
     }
     /* Else, if Table size is wrong (must be 128 entries or less) */
     else if ( 128 < u32EFPortLoad( pu8GPTHeader + EF_GPT_HEADER_OFFSET_PTE_NB ) )
     {
       ; /* Invalid */
-      eRetVal = EF_RET_ERROR;
+      eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
     }
     /* Else, everything is good */
     else

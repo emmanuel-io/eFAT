@@ -139,7 +139,7 @@ ef_return_et eEF_file_truncate (
     }
   }
 
-    return eRetVal;
+  return eRetVal;
 }
 
 /* Public functions ------------------------------------------------------------------------------------------------ */
@@ -250,8 +250,6 @@ ef_return_et eEF_fopen (
                                        | EF_FILE_OPEN_NEW ) ) ) )
       { /* Create or Open a file */
 
-        /* Consider everything ok bby default */
-        eRetVal = EF_RET_OK;
         /* If there is NOT file lock available */
         if ( EF_RET_OK != eEFPrvLockEnq( ) )
         {
@@ -266,6 +264,8 @@ ef_return_et eEF_fopen (
         /* Else */
         else
         {
+          /* Consider everything ok by default */
+          eRetVal = EF_RET_OK;
           /* File is created */
           u8Mode |= EF_FILE_MODIFIED;
         }

@@ -21,6 +21,7 @@
  *
  *  This software is provided by the copyright holders and contributors "AS IS" and any warranties related to this
  *  software are DISCLAIMED.
+ *
  *  The copyright owners or contributors be NOT LIABLE for any damages caused by use of this software.
  * ********************************************************************************************************************
  */
@@ -54,14 +55,85 @@
 /* Local function prototypes---------------------------------------------------------------------------------------- */
 /* Local functions ------------------------------------------------------------------------------------------------- */
 /* Public functions ------------------------------------------------------------------------------------------------ */
+
 /* Read an object from the directory */
-ef_return_et eEFPrvLabelReadVFAT (
-    ef_directory_st * pxDir
+ef_return_et eEFPrvLabelRead (
+  ef_directory_st * pxDir
 )
 {
-  ef_return_et  eRetVal = EF_RET_NO_FILE;
+  EF_ASSERT_PRIVATE( 0 != pxDir );
 
-#if ( 0 != EF_CONF_VFAT )
+#if ( 0 == EF_CONF_VFAT )
+
+  ef_return_et    eRetVal = EF_RET_OK;
+  ef_fs_st      * pxFS    = pxDir->xObject.pxFS;
+  ef_u08_t        u8Attrib;
+  ef_u08_t        u8EntryType;
+
+  while ( 0 != pxDir->xSector )
+  {
+    if ( EF_RET_OK != eEFPrvFSWindowLoad( pxFS, pxDir->xSector ) )
+    {
+      eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
+      break;
+    }
+    /* Test for the entry type */
+    u8EntryType = pxDir->pu8Dir[ EF_DIR_NAME_START ];
+    /* Reached to end of the directory */
+    if ( 0 == u8EntryType )
+    {
+      eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_NO_FILE );
+      break;
+    }
+    /* Get attribute */
+    u8Attrib = pxDir->pu8Dir[ EF_DIR_ATTRIBUTES ] & EF_DIR_ATTRIB_BITS_DEFINED;
+    pxDir->xObject.u8Attrib = u8Attrib;
+    /* Is it a valid entry? */
+    if ( EF_DIR_DELETED_MASK == u8EntryType )
+    {
+      EF_CODE_COVERAGE( );
+    }
+    else if ( '.' == u8EntryType )
+    {
+      EF_CODE_COVERAGE( );
+    }
+    else if ( EF_DIR_ATTRIB_BITS_LFN == u8Attrib )
+    {
+      EF_CODE_COVERAGE( );
+    }
+    else if ( EF_DIR_ATTRIB_BIT_VOLUME_ID != ( ~EF_DIR_ATTRIB_BIT_ARCHIVE & u8Attrib ) )
+    {
+      EF_CODE_COVERAGE( );
+    }
+    else
+    {
+      /* Label directory entry found */
+      break;
+    }
+    /* Next entry */
+    if ( EF_RET_OK != eEFPrvDirectoryIndexNext( pxDir, EF_BOOL_FALSE ) )
+    {
+      eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_NO_FILE );
+      break;
+    }
+    else
+    {
+      EF_CODE_COVERAGE( );
+    }
+  }
+
+  if ( EF_RET_OK != eRetVal )
+  {
+    /* Terminate the read operation on error or EOT */
+    pxDir->xSector = 0;
+  }
+  else
+  {
+    EF_CODE_COVERAGE( );
+  }
+
+#else
+  ef_return_et    eRetVal = EF_RET_NO_FILE;
   ef_fs_st      * pxFS  = pxDir->xObject.pxFS;
   ef_u08_t        u8Attrib;
   ef_u08_t        ord = 0xFF;
@@ -78,7 +150,7 @@ ef_return_et eEFPrvLabelReadVFAT (
     ef_u08_t u8EntryType = pxDir->pu8Dir[ EF_DIR_NAME_START ];  /* Test for the entry type */
     if ( 0 == u8EntryType )
     {
-      eRetVal = EF_RET_NO_FILE;
+      eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_NO_FILE );
       break; /* Reached to end of the directory */
     }
     u8Attrib = pxDir->pu8Dir[ EF_DIR_ATTRIBUTES ] & EF_DIR_ATTRIB_BITS_DEFINED;
@@ -153,3 +225,4 @@ ef_return_et eEFPrvLabelReadVFAT (
 
 /* ***************************************************************************************************************** */
 /* END OF FILE ***************************************************************************************************** */
+

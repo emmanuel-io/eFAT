@@ -58,8 +58,9 @@ ef_return_et eEF_findfirst (
 
   /* Save pointer to pattern string */
   pxDir->pxPattern = pxPattern;
+
   /* Open the target directory */
-  if ( EF_RET_OK != eRetVal = eEF_diropen( pxDir, pxPath ) )
+  if ( EF_RET_OK != eEF_diropen( pxDir, pxPath ) )
   {
     eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
   }

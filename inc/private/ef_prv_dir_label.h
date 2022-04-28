@@ -81,78 +81,9 @@
  *  @retval EF_RET_INVALID_PARAMETER    Given parameter is invalid
  */
 
-ef_return_et eEFPrvLabelReadVFAT (
+ef_return_et eEFPrvLabelRead (
   ef_directory_st* pxDir
 );
-
-/**
- *  @brief  Read an object from the directory
- *
- *  @param  pxDir Pointer to the directory object
- *
- *  @return Function completion
- *  @retval EF_RET_OK                   Succeeded
- *  @retval EF_RET_DISK_ERR             A hard error occurred in the low level disk I/O layer
- *  @retval EF_RET_INT_ERR              Assertion failed
- *  @retval EF_RET_NOT_READY            The physical drive cannot work
- *  @retval EF_RET_NO_FILE              Could not find the file
- *  @retval EF_RET_NO_PATH              Could not find the path
- *  @retval EF_RET_INVALID_NAME         The path name format is invalid
- *  @retval EF_RET_DENIED               Access denied due to prohibited access or directory full
- *  @retval EF_RET_EXIST                Access denied due to prohibited access
- *  @retval EF_RET_INVALID_OBJECT       The file/directory object is invalid
- *  @retval EF_RET_WRITE_PROTECTED      The physical drive is write protected
- *  @retval EF_RET_INVALID_DRIVE        The logical drive number is invalid
- *  @retval EF_RET_NOT_ENABLED          The volume has no work area
- *  @retval EF_RET_NO_FILESYSTEM        There is no valid FAT volume
- *  @retval EF_RET_MKFS_ABORTED         The f_mkfs() aborted due to any problem
- *  @retval EF_RET_TIMEOUT              Could not get a grant to access the volume within defined period
- *  @retval EF_RET_LOCKED               The operation is rejected according to the file sharing policy
- *  @retval EF_RET_NOT_ENOUGH_CORE      LFN working buffer could not be allocated
- *  @retval EF_RET_TOO_MANY_OPEN_FILES  Number of open files > EF_CONF_FILE_LOCK
- *  @retval EF_RET_INVALID_PARAMETER    Given parameter is invalid
- */
-
-ef_return_et eEFPrvLabelReadFAT (
-  ef_directory_st* pxDir
-);
-
-/**
- *  @brief  Read an object from the directory
- *
- *  @param  pxDir Pointer to the directory object
- *  @param  vol   Filtered by 0:file/directory or 1:volume Label
- *
- *  @return Function completion
- *  @retval EF_RET_OK                   Succeeded
- *  @retval EF_RET_DISK_ERR             A hard error occurred in the low level disk I/O layer
- *  @retval EF_RET_INT_ERR              Assertion failed
- *  @retval EF_RET_NOT_READY            The physical drive cannot work
- *  @retval EF_RET_NO_FILE              Could not find the file
- *  @retval EF_RET_NO_PATH              Could not find the path
- *  @retval EF_RET_INVALID_NAME         The path name format is invalid
- *  @retval EF_RET_DENIED               Access denied due to prohibited access or directory full
- *  @retval EF_RET_EXIST                Access denied due to prohibited access
- *  @retval EF_RET_INVALID_OBJECT       The file/directory object is invalid
- *  @retval EF_RET_WRITE_PROTECTED      The physical drive is write protected
- *  @retval EF_RET_INVALID_DRIVE        The logical drive number is invalid
- *  @retval EF_RET_NOT_ENABLED          The volume has no work area
- *  @retval EF_RET_NO_FILESYSTEM        There is no valid FAT volume
- *  @retval EF_RET_MKFS_ABORTED         The f_mkfs() aborted due to any problem
- *  @retval EF_RET_TIMEOUT              Could not get a grant to access the volume within defined period
- *  @retval EF_RET_LOCKED               The operation is rejected according to the file sharing policy
- *  @retval EF_RET_NOT_ENOUGH_CORE      LFN working buffer could not be allocated
- *  @retval EF_RET_TOO_MANY_OPEN_FILES  Number of open files > EF_CONF_FILE_LOCK
- *  @retval EF_RET_INVALID_PARAMETER    Given parameter is invalid
- */
-
-#if ( 0 != EF_CONF_VFAT )
-  /* LFN configuration */
-  #define DIR_READ_LABEL(pxDir) eEFPrvLabelReadVFAT(pxDir)
-#else
-  /* SFN Only configuration */
-  #define DIR_READ_LABEL(pxDir) eEFPrvLabelReadFAT(pxDir)
-#endif
 
 /* ***************************************************************************************************************** */
 #ifdef __cplusplus

@@ -107,8 +107,9 @@ ef_return_et eEFPrvPathFollow (
         (void) EF_RETURN_CODE_HANDLER( eRetVal );
         break;
       }
+      ef_bool_t     bFound = EF_BOOL_FALSE;
       /* Find an object with the segment name */
-      eRetVal = eEFPrvDirFind( pxDir );
+      eRetVal = eEFPrvDirFind( pxDir, &bFound );
       if ( EF_RET_NO_FILE == eRetVal )
       {
         *peResult = eRetVal;
@@ -178,6 +179,7 @@ ef_return_et eEFPrvPathFollow (
       }
       else
       {
+        EF_CODE_COVERAGE( );
       }
       /* Open next directory */
 //      pxDir->xObject.u32ClstStart = eEFPrvDirectoryClusterGet( pxFS,

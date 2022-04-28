@@ -128,7 +128,7 @@ ef_return_et eEF_getcwd (
       }
       do {
         /* Find the entry links to the child directory */
-        eRetVal = DIR_READ_FILE( &xDir );
+        eRetVal = eEFPrvDirRead( &xDir );
         if ( EF_RET_OK != eRetVal )
         {
           break;

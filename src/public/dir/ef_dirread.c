@@ -49,7 +49,11 @@ ef_return_et eEF_dirread (
 
 
   /* Check validity of the directory object */
-  if ( EF_RET_OK == eEFPrvValidateObject( &pxDir->xObject, &pxFS ) )
+  if ( EF_RET_OK != eEFPrvValidateObject( &pxDir->xObject, &pxFS ) )
+  {
+    eRetVal = EF_RET_INVALID_OBJECT;
+  }
+  else
   {
     if ( 0 == pxFileInfo )
     {
@@ -60,7 +64,7 @@ ef_return_et eEF_dirread (
     {
       eRetVal = EF_LFN_BUFFER_SET( pxFS );
       /* Read an item */
-      eRetVal = DIR_READ_FILE( pxDir );
+      eRetVal = eEFPrvDirRead( pxDir );
       if ( EF_RET_NO_FILE == eRetVal )
       {
         /* Ignore end of directory */

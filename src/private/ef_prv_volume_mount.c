@@ -158,8 +158,8 @@ static  ef_return_et eEFPrvBPBFATAnalyze (
 
 /* Get FS Type from Clusters Number */
 static  ef_return_et  eEFPrvClustersNbToFSType (
-  ef_u32_t  u32ClustersNb,
-  ef_u08_t * pu8Format
+  ef_u32_t    u32ClustersNb,
+  ef_u08_t  * pu8Format
 )
 {
   EF_ASSERT_PRIVATE( 0 != pu8Format );
@@ -185,7 +185,7 @@ static  ef_return_et  eEFPrvClustersNbToFSType (
   else
   {
     *pu8Format = 0;
-    eRetVal = EF_RET_ERROR;
+    eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
   }
   return eRetVal;
 }
@@ -204,6 +204,10 @@ ef_return_et eEFPrvVolumeMountFinishFAT12 (
     /* (EF_BS_BPB_FAT_OFFSET_ROOT_ENTRIES must not be 0) */
     eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
   }
+  else
+  {
+    EF_CODE_COVERAGE( );
+  }
   /* Root directory start sector */
   pxFS->xDirBase = pxFS->xFatBase + pxFS->u32FatSize;
   /* (Needed FAT size) */
@@ -217,6 +221,10 @@ ef_return_et eEFPrvVolumeMountFinishFAT12 (
   {
     /* (BPB_FATSz must not be less than the size needed) */
     eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
+  }
+  else
+  {
+    EF_CODE_COVERAGE( );
   }
   /* Get FSInfo if available */
   /* Initialize cluster allocation information */
@@ -241,6 +249,10 @@ ef_return_et eEFPrvVolumeMountFinishFAT16 (
     /* (EF_BS_BPB_FAT_OFFSET_ROOT_ENTRIES must not be 0) */
     eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
   }
+  else
+  {
+    EF_CODE_COVERAGE( );
+  }
   /* Root directory start sector */
   pxFS->xDirBase = pxFS->xFatBase + pxFS->u32FatSize;
   /* (Needed FAT size) */
@@ -252,6 +264,10 @@ ef_return_et eEFPrvVolumeMountFinishFAT16 (
   {
     /* (BPB_FATSz must not be less than the size needed) */
     eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
+  }
+  else
+  {
+    EF_CODE_COVERAGE( );
   }
 
   /* Get FSInfo if available */
@@ -282,6 +298,10 @@ ef_return_et eEFPrvVolumeMountFinishFAT32 (
   {
     eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_NO_FILESYSTEM );
   }
+  else
+  {
+    EF_CODE_COVERAGE( );
+  }
   pxFS->xDirBase = u32EFPortLoad( pxFS->pu8Window + EF_BS_EBPB_FAT32_OFFSET_ROOT_DIRECTORY_NB );  /* Root directory start sector */
   u32FATSizeBytes *= 4;
   u32FATSizeBytes += (ef_u32_t) EF_SECTOR_SIZE( pxFS ) - 1;
@@ -291,11 +311,19 @@ ef_return_et eEFPrvVolumeMountFinishFAT32 (
     /* (BPB_FATSz must not be less than the size needed) */
     eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
   }
+  else
+  {
+    EF_CODE_COVERAGE( );
+  }
 
   if ( EF_SECTOR_SIZE( pxFS ) != u16EFPortLoad( pxFS->pu8Window + EF_BS_BPB_FAT_OFFSET_SECTOR_SIZE ) )
   {
     /* (EF_BS_BPB_FAT_OFFSET_SECTOR_SIZE must be equal to the physical sector size) */
     eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
+  }
+  else
+  {
+    EF_CODE_COVERAGE( );
   }
 
   //  ef_u16_t  u16Value = u16EFPortLoad( pxFS->pu8Window + EF_BS_EBPB_FAT32_OFFSET_FAT_VERSION );
@@ -304,6 +332,10 @@ ef_return_et eEFPrvVolumeMountFinishFAT32 (
   {
     eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_NO_FILESYSTEM );
 //    return EF_RET_NO_FILESYSTEM;  /* (Must be FAT32 revision 0.0) */
+  }
+  else
+  {
+    EF_CODE_COVERAGE( );
   }
 
   /* Get FSInfo if available */
@@ -328,12 +360,32 @@ ef_return_et eEFPrvVolumeMountFinishFAT32 (
         {
           pxFS->u32ClstFreeNb = u32EFPortLoad( pxFS->pu8Window + EF_BS_FAT32_FSI_OFFSET_FREE_CLUSTERS );
         }
+        else
+        {
+          EF_CODE_COVERAGE( );
+        }
         if ( 0 != EF_CONF_USE_FAT32_FSINFO_CLUSTER_ALLOCATED )
         {
           pxFS->u32ClstLast = u32EFPortLoad( pxFS->pu8Window + EF_BS_FAT32_FSI_OFFSET_CLUSTER_LAST_ALLOC );
         }
+        else
+        {
+          EF_CODE_COVERAGE( );
+        }
+      }
+      else
+      {
+        EF_CODE_COVERAGE( );
       }
     }
+    else
+    {
+      EF_CODE_COVERAGE( );
+    }
+  }
+  else
+  {
+    EF_CODE_COVERAGE( );
   }
 
   return eRetVal;
@@ -643,10 +695,18 @@ ef_return_et eEFPrvVolumeMount (
 //          pxFS->pxLFNBuffer = LfnBuf;  /* Static LFN working buffer */
 //      #endif
         }
+        else
+        {
+          EF_CODE_COVERAGE( );
+        }
         if ( 0 != EF_CONF_RELATIVE_PATH )
         {
           /* Initialize current directory */
           pxFS->u32DirClstCurrent = 0;
+        }
+        else
+        {
+          EF_CODE_COVERAGE( );
         }
         /* Clear file lock semaphores */
         (void) eEFPrvLockClear( pxFS );
@@ -670,10 +730,18 @@ ef_return_et eEFPrvVolumeMount (
 //      pxFS->pxLFNBuffer = LfnBuf;
 //  #endif
     }
+    else
+    {
+      EF_CODE_COVERAGE( );
+    }
     if ( 0 != EF_CONF_RELATIVE_PATH )
     {
       /* Initialize current directory */
       pxFS->u32DirClstCurrent = 0;
+    }
+    else
+    {
+      EF_CODE_COVERAGE( );
     }
     /* Clear file lock semaphores */
     (void) eEFPrvLockClear( pxFS );
@@ -691,12 +759,9 @@ ef_return_et eEFPrvVolumeFSPtrGet (
   EF_ASSERT_PRIVATE( EF_CONF_VOLUMES_NB > s8VolumeNb );
   EF_ASSERT_PRIVATE( 0 != ppxFS );
 
-  ef_return_et  eRetVal = EF_RET_INVALID_DRIVE;
+  ef_return_et  eRetVal = EF_RET_OK;
 
   *ppxFS  = pxeFAT[ s8VolumeNb ];
-
-  /* The filesystem object is already valid */
-  eRetVal = EF_RET_OK;
 
   return eRetVal;
 }
@@ -710,12 +775,9 @@ ef_return_et eEFPrvVolumeFSPtrSet (
   EF_ASSERT_PRIVATE( EF_CONF_VOLUMES_NB > s8VolumeNb );
 //  EF_ASSERT_PRIVATE( 0 != pxFS );
 
-  ef_return_et  eRetVal = EF_RET_INVALID_DRIVE;
+  ef_return_et  eRetVal = EF_RET_OK;
 
   pxeFAT[ s8VolumeNb ] = pxFS;
-
-  /* The filesystem object is already valid */
-  eRetVal = EF_RET_OK;
 
   return eRetVal;
 }
@@ -776,6 +838,10 @@ ef_return_et eEFPrvVolumeMountCheck (
       {
         eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_INVALID_DRIVE );
       }
+    }
+    else
+    {
+      EF_CODE_COVERAGE( );
     }
   }
 

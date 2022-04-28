@@ -71,7 +71,7 @@ ef_return_et eEF_truncate (
   }
   if ( 0 == ( pxFile->u8StatusFlags & EF_FILE_OPEN_WRITE ) )
   {
-    eRetVal = EF_RET_DENIED;  /* Check access u8Mode */
+    eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_DENIED );  /* Check access u8Mode */
     (void) eEFPrvFSUnlock( pxFS, eRetVal );
     return eRetVal;
   }

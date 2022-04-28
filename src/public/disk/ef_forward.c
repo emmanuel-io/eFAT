@@ -130,7 +130,7 @@ ef_return_et eEF_forward (
     /* Get current data sector */
     if ( EF_RET_OK != eEFPrvFATClusterToSector( pxFS, pxFile->u32Clst, &xSector ) )
     {
-      eRetVal = EF_RET_INT_ERR;
+      eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_INT_ERR );
       pxFile->u8ErrorCode = (ef_u08_t)(eRetVal);
       (void) eEFPrvFSUnlock( pxFS, eRetVal );
       return eRetVal;
@@ -143,7 +143,7 @@ ef_return_et eEF_forward (
         {    /* Write-back dirty sector cache */
           if ( EF_RET_OK !=  eEFPrvDriveWrite( pxFS->u8PhysDrv, pxFile->u8Window, pxFile->xSector, 1 ) )
           {
-            eRetVal = EF_RET_DISK_ERR;
+            eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_DISK_ERR );
             pxFile->u8ErrorCode = (ef_u08_t)(eRetVal);
             (void) eEFPrvFSUnlock( pxFS, eRetVal );
             return eRetVal;
@@ -152,7 +152,7 @@ ef_return_et eEF_forward (
         }
       if ( EF_RET_OK !=  eEFPrvDriveRead( pxFS->u8PhysDrv, pxFile->u8Window, xSector, 1 ) )
       {
-        eRetVal = EF_RET_DISK_ERR;
+        eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_DISK_ERR );
         pxFile->u8ErrorCode = (ef_u08_t)(eRetVal);
         (void) eEFPrvFSUnlock( pxFS, eRetVal );
         return eRetVal;
@@ -172,7 +172,7 @@ ef_return_et eEF_forward (
                       rcnt );
     if ( 0 == rcnt )
     {
-      eRetVal = EF_RET_INT_ERR;
+      eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_INT_ERR );
       pxFile->u8ErrorCode = (ef_u08_t)(eRetVal);
       (void) eEFPrvFSUnlock( pxFS, eRetVal );
       return eRetVal;

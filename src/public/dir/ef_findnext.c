@@ -54,16 +54,32 @@ ef_return_et eEF_findnext (
 
   for ( ; ; )
   {
-    /* Get a directory item */
-    eRetVal = eEF_dirread( pxDir, pxFileInfo );
     /* If    any error
      *    OR end of directory */
-    if (    ( EF_RET_OK != eRetVal )
-         || ( 0 == pxFileInfo )
-         || ( 0 == pxFileInfo->xName[ 0 ] ) )
+    if ( EF_RET_OK != eEF_dirread( pxDir, pxFileInfo ) )
     {
+      eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
       break;
     }
+    else if ( 0 == pxFileInfo )
+    {
+      eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
+      break;
+    }
+    else if ( 0 == pxFileInfo->xName[ 0 ] )
+    {
+      eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
+      break;
+    }
+//    /* Get a directory item */
+//    eRetVal = eEF_dirread( pxDir, pxFileInfo );
+//    if (    ( EF_RET_OK != eRetVal )
+//         || ( 0 == pxFileInfo )
+//         || ( 0 == pxFileInfo->xName[ 0 ] ) )
+//    {
+//      eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
+//      break;
+//    }
     /* If Pattern matching failed */
     if ( EF_RET_OK != eEFPrvPatternMatching( pxDir->pxPattern, pxFileInfo->xName, 0, 0 ) )
     {

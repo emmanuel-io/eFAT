@@ -111,9 +111,9 @@ ef_return_et eEF_getfree (
       /* Else FAT16/32: Scan ef_u16_t/ef_u32_t FAT entries */
       else
       {
-        xSector = pxFS->xFatBase; /* Top of the FAT */
+        ef_lba_t  xSector = pxFS->xFatBase; /* Top of the FAT */
         ef_u32_t  i = 0;          /* Offset in the sector */
-        ef_lba_t  xSector;
+
         /* For all clusters in FileSystem */
         for ( ef_u32_t u32Cluster  = pxFS->u32FatEntriesNb ; 0 != u32Cluster ; --u32Cluster )
         {  /* Counts number of entries with zero in the FAT */

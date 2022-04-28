@@ -256,7 +256,9 @@ typedef enum {
   EF_RET_FAT_CLUSTER_OUT,      /**< (23) Cluster is empty */
   EF_RET_FAT_ERROR,            /**< (28) File allocation table is full */
   EF_RET_LFN_BUFFER_ERROR,      /**< (23) Cluster is empty */
-  EF_RET_BUFFER_ERROR      /**< (23) Cluster is empty */
+  EF_RET_BUFFER_ERROR,      /**< (23) Cluster is empty */
+  EF_RET_DIR_ENTRY_EXIST,      /**< (23) Directory entry found */
+  EF_RET_DIR_ENTRY_ABSENT      /**< (23) Directory entry missing */
 } ef_return_et;
 
 /* Local variables ------------------------------------------------------------------------------------------------- */

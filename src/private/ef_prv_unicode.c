@@ -1074,6 +1074,10 @@ ef_return_et eEFPrvCPSet( ef_u16_t u16CP )
       eRetVal  = EF_RET_OK;
       break;
     }
+    else
+    {
+      EF_CODE_COVERAGE( );
+    }
   }
 
   return eRetVal;
@@ -1095,6 +1099,10 @@ ef_return_et eEFPrvu8ToUpperExtendedCharacter (
     /* To upper SBC extended character */
     *pu8Char = ExCvt[ u8Char & 0x7F ];
   }
+  else
+  {
+    EF_CODE_COVERAGE( );
+  }
 
   return eRetVal;
 }
@@ -1115,6 +1123,10 @@ ef_return_et eEFPrvu16ToUpperExtendedCharacter (
     /* To upper SBC extended character */
     *pu16Char = ExCvt[ u16Char & 0x007F ];
   }
+  else
+  {
+    EF_CODE_COVERAGE( );
+  }
 
   return eRetVal;
 }
@@ -1134,6 +1146,10 @@ ef_return_et eEFPrvu32ToUpperExtendedCharacter (
   {
     /* To upper SBC extended character */
     *pu32Char = ExCvt[ u32Char & 0x0000007F ];
+  }
+  else
+  {
+    EF_CODE_COVERAGE( );
   }
 
   return eRetVal;
@@ -1205,7 +1221,7 @@ ef_return_et eEFPrvByteInDBCRanges1 (
    *    AND Byte is in range of considered values */
   if ( 0 == DbcTbl )
   {
-    eRetVal = EF_RET_ERROR;
+    eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
   }
   else if ( ( DbcTbl[ 0 ] <= u8Byte ) && ( DbcTbl[ 1 ] >= u8Byte ) )
   {
@@ -1219,7 +1235,7 @@ ef_return_et eEFPrvByteInDBCRanges1 (
   }
   else
   {
-    eRetVal = EF_RET_ERROR;
+    eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
   } /* Variable code page */
 
   return eRetVal;
@@ -1236,7 +1252,7 @@ ef_return_et eEFPrvByteInDBCRanges2 (
    *    AND Byte is in range of considered values */
   if ( 0 == DbcTbl )
   {
-    eRetVal = EF_RET_ERROR;
+    eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
   }
   else if ( ( DbcTbl[ 4 ] <= u8Byte ) && ( DbcTbl[ 5 ] >= u8Byte ) )
   {
@@ -1255,7 +1271,7 @@ ef_return_et eEFPrvByteInDBCRanges2 (
   }
   else
   {
-    eRetVal = EF_RET_ERROR;
+    eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
   }
 
   return eRetVal;
@@ -1350,6 +1366,10 @@ ef_return_et eEFPrvUnicode2OEM (
             {
               u16Char = p[ ( i * 2 ) + 1 ];
             }
+            else
+            {
+              EF_CODE_COVERAGE( );
+            }
             break;
           }
           else if ( uc > p[ i * 2] )
@@ -1413,6 +1433,10 @@ ef_return_et eEFPrvOEM2Unicode (
         eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_INT_ERR );
         break;
       }
+      else
+      {
+        EF_CODE_COVERAGE( );
+      }
 //      else
 //      {
 //        /* Extended char */
@@ -1449,6 +1473,10 @@ ef_return_et eEFPrvOEM2Unicode (
             {
               u16Char = p[ i * 2 + 1 ];
             }
+            else
+            {
+              EF_CODE_COVERAGE( );
+            }
             break;
           }
           else if ( u16OEMCodeIn > p[ i * 2 ] )
@@ -1460,6 +1488,10 @@ ef_return_et eEFPrvOEM2Unicode (
             hi = i;
           }
         }
+      }
+      else
+      {
+        EF_CODE_COVERAGE( );
       }
     }
   } /* DBCS */
@@ -1483,9 +1515,9 @@ ef_return_et eEFPrvUnicodeToUpper (
   if ( 0x10000 < u32UnicodeIn )
   {
     const ef_u16_t *  pu16Ptr;
-    ef_u16_t uc = (ef_u16_t)u32UnicodeIn;
+    ef_u16_t u16UnitCode = (ef_u16_t)u32UnicodeIn;
     /* Select conversion table */
-    if ( 0x1000 > uc )
+    if ( 0x1000 > u16UnitCode )
     {
       pu16Ptr = u16CompressedConvTable1;
     }
@@ -1499,7 +1531,7 @@ ef_return_et eEFPrvUnicodeToUpper (
       ef_u16_t bc = *pu16Ptr++;
       /* Not matched? */
       if (    ( 0 == bc )
-           || ( uc < bc ) )
+           || ( u16UnitCode < bc ) )
       {
         break;
       }
@@ -1508,45 +1540,45 @@ ef_return_et eEFPrvUnicodeToUpper (
       ef_u16_t cmd   = nc >> 8;
       nc   &= 0xFF;
       /* In the block? */
-      if ( uc < ( bc + nc ) )
+      if ( u16UnitCode < ( bc + nc ) )
       {
         switch ( cmd )
         {
         /* Table conversion */
         case 0:
-          uc = pu16Ptr[uc - bc];
+          u16UnitCode = pu16Ptr[u16UnitCode - bc];
           break;
         /* Case pairs */
         case 1:
-          uc -= (uc - bc) & 1;
+          u16UnitCode -= (u16UnitCode - bc) & 1;
           break;
         /* Shift -16 */
         case 2:
-          uc -= 16;
+          u16UnitCode -= 16;
           break;
         /* Shift -32 */
         case 3:
-          uc -= 32;
+          u16UnitCode -= 32;
           break;
         /* Shift -48 */
         case 4:
-          uc -= 48;
+          u16UnitCode -= 48;
           break;
         /* Shift -26 */
         case 5:
-          uc -= 26;
+          u16UnitCode -= 26;
           break;
         /* Shift +8 */
         case 6:
-          uc += 8;
+          u16UnitCode += 8;
           break;
         /* Shift -80 */
         case 7:
-          uc -= 80;
+          u16UnitCode -= 80;
           break;
           /* Shift -0x1C60 */
           case 8:
-            uc -= 0x1C60;
+            u16UnitCode -= 0x1C60;
             break;
             /* Shift -0x1C60 */
           default:
@@ -1554,13 +1586,21 @@ ef_return_et eEFPrvUnicodeToUpper (
         }
         break;
       }
+      else
+      {
+        EF_CODE_COVERAGE( );
+      }
       /* Skip table if needed */
       if ( 0 == cmd )
       {
         pu16Ptr += nc;
       }
+      else
+      {
+        EF_CODE_COVERAGE( );
+      }
     } /* Loop */
-    u32UnicodeIn = uc;
+    u32UnicodeIn = u16UnitCode;
   }
   * pu32UnicodeOut = u32UnicodeIn;
   return eRetVal;

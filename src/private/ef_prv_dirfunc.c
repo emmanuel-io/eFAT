@@ -1,6 +1,6 @@
 /**
  * ********************************************************************************************************************
- *  @file     ef_prv_dirfunc_vfat.c
+ *  @file     ef_prv_dirfunc_fat.c
  *  @ingroup  group_eFAT_Private
  *  @author   ChaN
  *  @author   Emmanuel AMADIO
@@ -29,8 +29,6 @@
 /* ***************************************************************************************************************** */
 
 /* Includes -------------------------------------------------------------------------------------------------------- */
-#include <ef_port_load_store.h>
-#include <ef_port_memory.h>
 #include <efat.h>
 #include <ef_prv_def.h>
 #include <ef_prv_fat.h>
@@ -45,6 +43,8 @@
 #include "ef_prv_gpt.h"
 #include "ef_prv_lfn.h"
 #include "ef_prv_unicode.h"
+#include <ef_port_load_store.h>
+#include <ef_port_memory.h>
 
 /* Local constant macros ------------------------------------------------------------------------------------------- */
 /* Local function macros ------------------------------------------------------------------------------------------- */
@@ -54,14 +54,96 @@
 /* Local function prototypes---------------------------------------------------------------------------------------- */
 /* Local functions ------------------------------------------------------------------------------------------------- */
 /* Public functions ------------------------------------------------------------------------------------------------ */
+
 /* Read an object from the directory */
-ef_return_et eEFPrvDirReadVFAT (
-  ef_directory_st * pxDir,
-  int               vol
+ef_return_et eEFPrvDirRead (
+  ef_directory_st * pxDir
 )
 {
+  EF_ASSERT_PRIVATE( 0 != pxDir );
+
+#if ( 0 == EF_CONF_VFAT )
+
+  ef_return_et    eRetVal = EF_RET_OK;
+  ef_fs_st      * pxFS    = pxDir->xObject.pxFS;
+  ef_u08_t        u8Attrib;
+  ef_u08_t        u8Byte;
+
+  while ( 0 != pxDir->xSector )
+  {
+    if ( EF_RET_OK != eEFPrvFSWindowLoad( pxFS, pxDir->xSector ) )
+    {
+      eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
+      break;
+    }
+    else
+    {
+      EF_CODE_COVERAGE( );
+    }
+    /* Test for the entry type */
+    u8Byte = pxDir->pu8Dir[ EF_DIR_NAME_START ];
+    /* Reached to end of the directory */
+    if ( 0 == u8Byte )
+    {
+      eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_NO_FILE );
+      break;
+    }
+    else
+    {
+      EF_CODE_COVERAGE( );
+    }
+    /* Get attribute */
+    u8Attrib = pxDir->pu8Dir[ EF_DIR_ATTRIBUTES ] & EF_DIR_ATTRIB_BITS_DEFINED;
+    pxDir->xObject.u8Attrib = u8Attrib;
+    /* Is it a valid entry? */
+//    if (    ( EF_DIR_DELETED_MASK != u8Byte )
+//         && ( '.' != u8Byte )
+//         && ( EF_DIR_ATTRIB_BITS_LFN != u8Attrib )
+//         && ( EF_DIR_ATTRIB_BIT_VOLUME_ID != ( ~EF_DIR_ATTRIB_BIT_ARCHIVE & u8Attrib ) ) )
+    if ( EF_DIR_DELETED_MASK == u8Byte )
+    {
+      EF_CODE_COVERAGE( );
+    }
+    else if ( '.' == u8Byte )
+    {
+      EF_CODE_COVERAGE( );
+    }
+    else if ( EF_DIR_ATTRIB_BITS_LFN == u8Attrib )
+    {
+      EF_CODE_COVERAGE( );
+    }
+    else if ( EF_DIR_ATTRIB_BIT_VOLUME_ID == ( ~EF_DIR_ATTRIB_BIT_ARCHIVE & u8Attrib ) )
+    {
+      EF_CODE_COVERAGE( );
+    }
+    else
+    {
+      break;
+    }
+    /* Next entry */
+    if ( EF_RET_OK != eEFPrvDirectoryIndexNext( pxDir, EF_BOOL_FALSE ) )
+    {
+      eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_NO_FILE );
+      break;
+    }
+    else
+    {
+      EF_CODE_COVERAGE( );
+    }
+  }
+
+  if ( EF_RET_OK != eRetVal )
+  {
+    /* Terminate the read operation on error or EOT */
+    pxDir->xSector = 0;
+  }
+  else
+  {
+    EF_CODE_COVERAGE( );
+  }
+
+#else
   ef_return_et eRetVal = EF_RET_NO_FILE;
-#if ( 0 != EF_CONF_VFAT )
   ef_fs_st *  pxFS      = pxDir->xObject.pxFS;
   ef_u08_t             u8Attrib;
   ef_u08_t             ord = 0xFF;
@@ -146,18 +228,80 @@ ef_return_et eEFPrvDirReadVFAT (
     pxDir->xSector = 0;    /* Terminate the read operation on error or EOT */
   }
 #endif /* ( 0 != EF_CONF_VFAT ) */
-
   return eRetVal;
 }
 
 /* Directory handling - Find an object in the directory */
-ef_return_et eEFPrvDirFindVFAT (
-  ef_directory_st * pxDir
+ef_return_et eEFPrvDirFind (
+  ef_directory_st * pxDir,
+  ef_bool_t       * pbFound
 )
 {
-  ef_return_et eRetVal = EF_RET_INT_ERR;
+  EF_ASSERT_PRIVATE( 0 != pxDir );
+  EF_ASSERT_PRIVATE( 0 != pbFound );
 
-#if ( 0 != EF_CONF_VFAT )
+#if ( 0 == EF_CONF_VFAT )
+
+  ef_return_et  eRetVal = EF_RET_OK;
+  ef_bool_t     bFound = EF_BOOL_FALSE;
+
+  /* Rewind directory object */
+  if ( EF_RET_OK != eEFPrvDirectoryIndexSet( pxDir, 0 ) )
+  {
+    eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
+  }
+  else
+  {
+    ef_fs_st * pxFS = pxDir->xObject.pxFS;
+
+    do
+    {
+      if ( EF_RET_OK != eEFPrvFSWindowLoad( pxFS, pxDir->xSector ) )
+      {
+        eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
+        break;
+      }
+      /* If we Reached to end of table */
+      else if ( 0 == pxDir->pu8Dir[ EF_DIR_NAME_START ] )
+      {
+        eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_NO_FILE );
+        break;
+      }
+      else
+      {
+        /* Non LFN configuration */
+        pxDir->xObject.u8Attrib = EF_DIR_ATTRIB_BITS_DEFINED & pxDir->pu8Dir[ EF_DIR_ATTRIBUTES ];
+        /* If it is a NOT valid entry */
+        if ( 0 != ( EF_DIR_ATTRIB_BIT_VOLUME_ID & pxDir->pu8Dir[ EF_DIR_ATTRIBUTES ] ) )
+        {
+          EF_CODE_COVERAGE( );
+        }
+        else if ( EF_RET_OK != eEFPortMemCompare( pxDir->pu8Dir, pxDir->u8Name, 11 ) )
+        {
+          EF_CODE_COVERAGE( );
+        }
+        else
+        {
+          break;
+        }
+        /* Next entry */
+        eRetVal = eEFPrvDirectoryIndexNext( pxDir, EF_BOOL_FALSE );
+        if ( EF_RET_OK != eRetVal )
+        {
+          (void) EF_RETURN_CODE_HANDLER( eRetVal );
+        }
+        else
+        {
+          EF_CODE_COVERAGE( );
+        }
+      }
+    }
+    while ( EF_RET_OK == eRetVal );
+  }
+
+  *pbFound = bFound;
+
+#else
   /* Rewind directory object */
   eRetVal = eEFPrvDirectoryIndexSet( pxDir, 0 );
   if ( EF_RET_OK == eRetVal )
@@ -261,12 +405,45 @@ ef_return_et eEFPrvDirFindVFAT (
 }
 
 /* Register an object to the directory */
-ef_return_et eEFPrvDirRegisterVFAT (
+ef_return_et eEFPrvDirRegister (
   ef_directory_st * pxDir
 )
 {
+  EF_ASSERT_PRIVATE( 0 != pxDir );
+
+#if ( 0 == EF_CONF_VFAT )
+
+  ef_return_et eRetVal = EF_RET_OK;
+
+  ef_fs_st  * pxFS = pxDir->xObject.pxFS;
+
+  /* Allocate an entry for SFN */
+  if ( EF_RET_OK != eEFPrvDirectoryAllocate( pxDir, 1 ) )
+  {
+    eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_DISK_ERR );
+  }
+  /* Set SFN entry */
+  else if ( EF_RET_OK != eEFPrvFSWindowLoad( pxFS, pxDir->xSector ) )
+  {
+    eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_DISK_ERR );
+  }
+  /* Clean the entry */
+  else if ( EF_RET_OK != eEFPortMemZero( pxDir->pu8Dir, EF_DIR_ENTRY_SIZE ) )
+  {
+    eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_INT_ERR );
+  }
+  /* Put SFN */
+  else if ( EF_RET_OK != eEFPortMemCopy( pxDir->u8Name, pxDir->pu8Dir + EF_DIR_NAME_START, 11 ) )
+  {
+    eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_INT_ERR );
+  }
+  else
+  {
+    pxFS->u8WinFlags = EF_FS_WIN_DIRTY;
+  }
+
+#else
   ef_return_et  eRetVal = EF_RET_INT_ERR;
-#if ( 0 != EF_CONF_VFAT )
   ef_fs_st    * pxFS = pxDir->xObject.pxFS;
 
   ef_u32_t n;
@@ -378,12 +555,31 @@ ef_return_et eEFPrvDirRegisterVFAT (
 }
 
 /* Remove an object from the directory */
-ef_return_et eEFPrvDirRemoveVFAT (
+ef_return_et eEFPrvDirRemove (
   ef_directory_st * pxDir
 )
 {
+  EF_ASSERT_PRIVATE( 0 != pxDir );
+
+#if ( 0 == EF_CONF_VFAT )
+
+  ef_return_et eRetVal = EF_RET_OK;
+
+  ef_fs_st  * pxFS = pxDir->xObject.pxFS;
+
+  if ( EF_RET_OK != eEFPrvFSWindowLoad( pxFS, pxDir->xSector ) )
+  {
+    eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_INT_ERR );
+  }
+  else
+  {
+    /* Mark the entry 'deleted'.*/
+    pxDir->pu8Dir[ EF_DIR_NAME_START ] = EF_DIR_DELETED_MASK;
+    pxFS->u8WinFlags = EF_FS_WIN_DIRTY;
+  }
+
+#else
   ef_return_et  eRetVal = EF_RET_INT_ERR;
-#if ( 0 != EF_CONF_VFAT )
   ef_fs_st    * pxFS = pxDir->xObject.pxFS;
 
   ef_u32_t     last = pxDir->u32Offset;
@@ -428,7 +624,6 @@ ef_return_et eEFPrvDirRemoveVFAT (
 
   return eRetVal;
 }
-
-
 /* ***************************************************************************************************************** */
 /* END OF FILE ***************************************************************************************************** */
+

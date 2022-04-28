@@ -136,24 +136,21 @@ ef_return_et eEF_diropen (
         {
           eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
         }
-        else
+        else if ( 0 != pxDir->xObject.u32ClstStart )
         {
-          if ( 0 != pxDir->xObject.u32ClstStart )
+          (void) eEFPrvLockInc( pxDir, 0, &(pxDir->xObject.u32LockId) );  /* Lock the sub directory */
+          if ( 0 == pxDir->xObject.u32LockId )
           {
-            (void) eEFPrvLockInc( pxDir, 0, &(pxDir->xObject.u32LockId) );  /* Lock the sub directory */
-            if ( 0 == pxDir->xObject.u32LockId )
-            {
-              eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_TOO_MANY_OPEN_FILES );
-            }
-            else
-            {
-              EF_CODE_COVERAGE( );
-            }
+            eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_TOO_MANY_OPEN_FILES );
           }
           else
           {
-            pxDir->xObject.u32LockId = 0;  /* Root directory need not to be locked */
+            EF_CODE_COVERAGE( );
           }
+        }
+        else
+        {
+          pxDir->xObject.u32LockId = 0;  /* Root directory need not to be locked */
         }
       }
     } /* Follow completed */

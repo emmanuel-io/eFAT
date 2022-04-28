@@ -96,7 +96,7 @@ ef_return_et eEF_rename (
          && ( 0 != ( ( EF_NS_DOT | EF_NS_NONAME ) & djo.u8Name[ EF_NSFLAG ] ) ) )
     {
       /* Check validity of name */
-      eRetVal = EF_RET_INVALID_NAME;
+      eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_INVALID_NAME );
     }
     if ( EF_RET_OK == eRetVal )
     {
@@ -118,11 +118,11 @@ ef_return_et eEF_rename (
         if (    ( djn.xObject.u32ClstStart == djo.xObject.u32ClstStart )
              && ( djn.u32Offset == djo.u32Offset ) )
         {
-          eRetVal = EF_RET_NO_FILE;
+          eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_NO_FILE );
         }
         else
         {
-          eRetVal = EF_RET_EXIST;
+          eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_EXIST );
         }
       }
       /* It is a valid pxPath and no name collision */
@@ -150,12 +150,12 @@ ef_return_et eEF_rename (
                                                   pu8Dir,
                                                   &u32Cluster ) )
             {
-              eRetVal = EF_RET_INT_ERR;
+              eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_INT_ERR );
             }
             /* Update .. entry in the sub-directory if needed */
             else if ( EF_RET_OK != eEFPrvFATClusterToSector( pxFS, u32Cluster, &xSector ) )
             {
-              eRetVal = EF_RET_INT_ERR;
+              eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_INT_ERR );
             }
             else
             {

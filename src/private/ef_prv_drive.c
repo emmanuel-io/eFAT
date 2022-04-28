@@ -148,7 +148,7 @@ ef_return_et eEFPrvDriveRegister (
   }
   else
   {
-    eRetVal = EF_RET_INVALID_PARAMETER;
+    eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_INVALID_PARAMETER );
   }
 
   return eRetVal;

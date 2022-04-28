@@ -145,7 +145,7 @@ ef_return_et eEF_remove (
         if ( EF_RET_OK == eRetVal )
         {
           /* Test if the directory is empty */
-          eRetVal = DIR_READ_FILE( &xSubDir );
+          eRetVal = eEFPrvDirRead( &xSubDir );
           /* Not empty? */
           if ( EF_RET_OK == eRetVal )
           {

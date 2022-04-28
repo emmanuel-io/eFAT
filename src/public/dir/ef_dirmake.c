@@ -63,7 +63,7 @@ ef_return_et eEF_dirmake (
 {
   EF_ASSERT_PUBLIC( 0 != pxPath );
 
-  ef_return_et  eRetVal;
+  ef_return_et  eRetVal = EF_RET_OK;
   ef_fs_st    * pxFS;
 
   /* Get logical drive */
@@ -93,14 +93,14 @@ ef_return_et eEF_dirmake (
     /* If Name collision */
     else if ( EF_RET_OK == eResult )
     {
-      eRetVal = EF_RET_EXIST;
+      eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_EXIST );
     }
     /* Else, if Invalid name */
     else if (    ( 0 != EF_CONF_RELATIVE_PATH )
               && ( EF_RET_NO_FILE == eResult )
               && ( 0 != ( EF_NS_DOT & xDir.u8Name[ EF_NSFLAG ] ) ) )
     {
-      eRetVal = EF_RET_INVALID_NAME;
+      eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_INVALID_NAME );
     }
     /* Else, if it is clear to create a new directory */
     else if ( EF_RET_NO_FILE == eResult )
@@ -108,22 +108,20 @@ ef_return_et eEF_dirmake (
       ef_object_st    xSyncObject;
       ef_u32_t        dcl;
       ef_u32_t        pcl;
-      ef_u32_t        tm;
+      ef_u32_t        tm = EF_FATTIME_GET();
 
       /* New object u16MountId to create a new chain */
       xSyncObject.pxFS = pxFS;
       /* Allocate a cluster for the new directory */
-      eRetVal = eEFPrvFATChainCreate( &xSyncObject, &dcl );
-      tm = EF_FATTIME_GET();
       /* If no space to allocate a new cluster */
-      if ( EF_RET_FAT_FULL != eRetVal )
+      if ( EF_RET_OK != eEFPrvFATChainCreate( &xSyncObject, &dcl ) )
       {
-        eRetVal = EF_RET_DENIED;
+        eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_DENIED );
       }
       /* Clean up the new table */
-      if ( EF_RET_OK != eEFPrvDirectoryClusterClear( pxFS, dcl ) )
+      else if ( EF_RET_OK != eEFPrvDirectoryClusterClear( pxFS, dcl ) )
       {
-        eRetVal = EF_RET_INT_ERR;
+        eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_INT_ERR );
       }
       else
       {
@@ -147,7 +145,7 @@ ef_return_et eEF_dirmake (
       if ( EF_RET_OK != eRetVal )
       {
         /* Could not register, remove the allocated cluster */
-        eEFPrvFATChainRemove( &xSyncObject, dcl, 0 );
+        (void) eEFPrvFATChainRemove( &xSyncObject, dcl, 0 );
       }
       else
       {

@@ -71,11 +71,11 @@ ef_return_et eEFPrvVolumeNbCurrentSet (
 
   if ( 0 > s8VolumeNb )
   {
-    eRetVal = EF_RET_ERROR;
+    eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
   }
   else if ( EF_CONF_VOLUMES_NB <= s8VolumeNb )
   {
-    eRetVal = EF_RET_ERROR;
+    eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
   }
   else
   {
@@ -100,7 +100,7 @@ ef_return_et eEFPrvVolumeNbCurrentGet (
   }
   else
   {
-    eRetVal = EF_RET_ERROR;
+    eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
     ; /* Code coverage */
   }
   return eRetVal;
@@ -114,7 +114,7 @@ ef_return_et eEFPrvVolumeNbPathRemove (
   EF_ASSERT_PRIVATE( 0 != ppxPath );
   EF_ASSERT_PRIVATE( 0 != *ppxPath );
 
-  ef_return_et  eRetVal = EF_RET_ERROR;
+  ef_return_et  eRetVal = EF_RET_OK;
 
   const TCHAR * tp = *ppxPath;
   const TCHAR * tt = *ppxPath;
@@ -164,7 +164,7 @@ ef_return_et eEFPrvVolumeNbPathRemove (
      *ppxPath = tt;
    }
   }
-  eRetVal = EF_RET_OK;
+
   return eRetVal;
 }
 
@@ -177,7 +177,7 @@ ef_return_et eEFPrvVolumeNbGet (
   EF_ASSERT_PRIVATE( 0 != *ppxPath );
   EF_ASSERT_PRIVATE( 0 != ps8VolumeNb );
 
-  ef_return_et  eRetVal = EF_RET_ERROR;
+  ef_return_et  eRetVal = EF_RET_OK;
   int8_t        s8VolumeNb = -1;
   const TCHAR * tp = *ppxPath;
   const TCHAR * tt = *ppxPath;
@@ -227,20 +227,20 @@ ef_return_et eEFPrvVolumeNbGet (
       *ppxPath    = tt;         /* Snip the drive prefix off */
     }
   }
-  eRetVal = EF_RET_OK;
+
   /* No drive prefix is found */
   if ( 0 <= s8VolumeNb )
   {
     /* Update volume number with the one found */
     *ps8VolumeNb = s8VolumeNb;
   }
-  /* Else if we use relative path is enabled */
+  /* Else if relative path is enabled */
   else if ( 0 != EF_CONF_RELATIVE_PATH )
   {
     /* Update volume number with the current one */
     if ( EF_RET_OK != eEFPrvVolumeNbCurrentGet( ps8VolumeNb ) )
     {
-      eRetVal = EF_RET_ERROR;
+      eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
     }
   }
   else

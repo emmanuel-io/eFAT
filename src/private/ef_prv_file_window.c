@@ -63,7 +63,7 @@ ef_return_et eEFPrvFileWindowDirtyWriteBack (
                                                   1 )  )
   {
     pxFile->u8ErrorCode = (ef_u08_t) EF_RET_DISK_ERR;
-    eRetVal = EF_RET_ERROR;
+    eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
   }
   else
   {

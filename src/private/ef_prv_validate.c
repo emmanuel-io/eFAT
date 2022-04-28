@@ -61,27 +61,27 @@ ef_return_et eEFPrvValidateObject (
   /* If the object file system pointer is not valid */
   if ( 0 == pxObject->pxFS )
   {
-    eRetVal = EF_RET_INVALID_OBJECT;
+    eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_INVALID_OBJECT );
   }
   /* Else, if the file system cannot be handled */
   else if ( 0 == ( EF_FS_FATS & pxObject->pxFS->u8FsType ) )
   {
-    eRetVal = EF_RET_INVALID_OBJECT;
+    eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_INVALID_OBJECT );
   }
   /* Else, if mount id of the object is not the same as the file system */
   else if ( pxObject->u16MountId != pxObject->pxFS->u16MountId )
   {
-    eRetVal = EF_RET_INVALID_OBJECT;
+    eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_INVALID_OBJECT );
   }
   /* Else, if we cannot obtain the file system object */
   else if ( EF_RET_OK != eEFPrvFSLock( pxObject->pxFS ) )
   {
-    eRetVal = EF_RET_TIMEOUT;
+    eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_TIMEOUT );
   }
   /* Else, if the physical drive is not kept initialized */
   else if ( 0 != ( EF_RET_DISK_NOINIT & eEFPrvDriveStatus( pxObject->pxFS->u8PhysDrv ) ) )
   {
-    eRetVal = EF_RET_INVALID_OBJECT;
+    eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_INVALID_OBJECT );
     (void) eEFPrvFSUnlockForce( pxObject->pxFS );
   }
   else

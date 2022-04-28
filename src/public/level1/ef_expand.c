@@ -85,13 +85,13 @@ ef_return_et eEF_expand (
        || ( 0 != pxFile->u32Size )
        || ( 0 == ( pxFile->u8StatusFlags & EF_FILE_OPEN_WRITE ) ) )
   {
-    eRetVal = EF_RET_DENIED;
+    eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_DENIED );
     (void) eEFPrvFSUnlock( pxFS, eRetVal );
     return eRetVal;
   }
   if ( EF_FILE_SIZE_MAX < fsz )
   {
-    eRetVal = EF_RET_DENIED;  /* Check if in size limit */
+    eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_DENIED );  /* Check if in size limit */
     (void) eEFPrvFSUnlock( pxFS, eRetVal );
     return eRetVal;
    }
@@ -134,7 +134,7 @@ ef_return_et eEF_expand (
     }
     if ( clst == stcl )
     {
-      eRetVal = EF_RET_DENIED;
+      eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_DENIED );
       break;
     }  /* No contiguous cluster? */
   }

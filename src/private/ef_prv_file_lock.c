@@ -82,7 +82,7 @@ ef_return_et eEFPrvLockCheck (
   }
   else
   {
-    eRetVal = EF_RET_ERROR;
+    eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
 
     ef_u32_t  i;
     ef_u32_t  be = 0;
@@ -156,7 +156,7 @@ ef_return_et eEFPrvLockEnq (void)
   }
   else
   {
-    eRetVal = EF_RET_LOCKED;
+    eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_LOCKED );
     for ( ef_u32_t i = 0 ; i < EF_CONF_FILE_LOCK ; i++ )
     {
       if ( 0 == Files[ i ].pxFS )
@@ -191,7 +191,7 @@ ef_return_et eEFPrvLockInc (
   }
   else
   {
-    eRetVal = EF_RET_ERROR;
+    eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
     ef_u32_t i;
 
     /* Find the object */
@@ -281,7 +281,7 @@ ef_return_et eEFPrvLockDec (
   }
   else
   {
-    eRetVal = EF_RET_INT_ERR;
+    eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_INT_ERR );
     ef_u16_t n;
 
     /* Index number origin from 0 */
@@ -339,7 +339,7 @@ ef_return_et eEFPrvLockClear (
   }
   else
   {
-    eRetVal = EF_RET_INT_ERR;
+    eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_INT_ERR );
 
     for ( ef_u32_t i = 0 ; i < EF_CONF_FILE_LOCK ; i++ )
     {

@@ -88,7 +88,7 @@ ef_return_et eEFPrvLFNBufferPtrGet (
   }
   else
   {
-    eRetVal = EF_RET_ERROR;
+    eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
   }
   return eRetVal;
 }
@@ -111,7 +111,7 @@ ef_return_et eEFPrvLFNBufferPtrSet (
   }
   else
   {
-    eRetVal = EF_RET_ERROR;
+    eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
   }
   return eRetVal;
 }
@@ -130,7 +130,7 @@ ef_return_et eEFPrvLFNCompare (
   /* Else, if Check LDIR_FstClusLO */
   if ( 0 != u16EFPortLoad( pu8Dir + EF_DIR_FIRST_CLUSTER_LOW ) )
   {
-    eRetVal = EF_RET_ERROR;
+    eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
   }
   else
   {
@@ -154,7 +154,7 @@ ef_return_et eEFPrvLFNCompare (
              || ( ef_wtoupper( uc ) != ef_wtoupper( pxLFNBuffer[ i++ ] ) ) )
         {
           /* Not matched */
-          eRetVal = EF_RET_ERROR;
+          eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
           break;
         }
         else
@@ -168,7 +168,7 @@ ef_return_et eEFPrvLFNCompare (
         /* Check filler */
         if ( 0xFFFF != uc )
         {
-          eRetVal = EF_RET_ERROR;
+          eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
           break;
         }
         else
@@ -184,7 +184,7 @@ ef_return_et eEFPrvLFNCompare (
          && ( 0 != u16Char )
          && ( 0 != pxLFNBuffer[ i ] ) )
     {
-      eRetVal = EF_RET_ERROR;
+      eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
     }
   }
 
@@ -205,7 +205,7 @@ ef_return_et eEFPrvLFNPick (
   /* Else, if Check LDIR_FstClusLO */
   if ( 0 != u16EFPortLoad( pu8Dir + EF_DIR_FIRST_CLUSTER_LOW ) )
   {
-    eRetVal = EF_RET_ERROR;
+    eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
   }
   else
   {
@@ -227,7 +227,7 @@ ef_return_et eEFPrvLFNPick (
         /* Buffer overflow? */
         if ( ( EF_LFN_UNITS_MAX + 1 ) <= i )
         {
-          eRetVal = EF_RET_ERROR;
+          eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
           break;
         }
         else
@@ -243,7 +243,7 @@ ef_return_et eEFPrvLFNPick (
         /* Check filler */
         if ( 0xFFFF != uc )
         {
-          eRetVal = EF_RET_ERROR;
+          eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
           break;
         }
         else
@@ -262,7 +262,7 @@ ef_return_et eEFPrvLFNPick (
       /* Buffer overflow? */
       if ( ( EF_LFN_UNITS_MAX + 1 ) <= i )
       {
-        eRetVal = EF_RET_ERROR;
+        eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
       }
       else
       {
