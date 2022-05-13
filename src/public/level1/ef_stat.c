@@ -70,7 +70,7 @@ ef_return_et eEF_stat (
   else
   {
     ef_directory_st xDir;
-    ef_return_et    eResult;
+    ef_bool_t bFound = EF_BOOL_FALSE;
 
     EF_LFN_BUFFER_DEFINE
 
@@ -82,12 +82,12 @@ ef_return_et eEF_stat (
       eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
     }
     /* Else, if following file path failed */
-    else if ( EF_RET_OK != eEFPrvPathFollow( pxPath, &xDir, &eResult ) )
+    else if ( EF_RET_OK != eEFPrvPathFollow( pxPath, &xDir, &bFound ) )
     {
-      eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_INVALID_NAME );
+      eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
     }
     /* Else, if following file path failed */
-    else if ( EF_RET_OK != eResult )
+    else if ( EF_BOOL_TRUE != bFound )
     {
       eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_INVALID_NAME );
     }

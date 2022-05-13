@@ -118,7 +118,7 @@ ef_return_et eEFPortMemCompare (
   {
     if ( 0 != ( *pu8BufferA++ - *pu8BufferB++ ) )
     {
-      eRetVal = EF_RET_ERROR;
+      eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
       break;
     }
   } while ( 0 != (--u32Count) );

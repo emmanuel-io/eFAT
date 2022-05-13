@@ -82,7 +82,7 @@
 ef_return_et eEFPrvPathFollow (
   const TCHAR     * pxPath,
   ef_directory_st * pxDir,
-  ef_return_et    * peResult
+  ef_bool_t       * pbFound
 );
 
 /* ***************************************************************************************************************** */

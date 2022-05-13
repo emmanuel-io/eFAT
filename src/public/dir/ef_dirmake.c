@@ -74,11 +74,18 @@ ef_return_et eEF_dirmake (
   else
   {
     ef_directory_st xDir;
-    ef_return_et    eResult;
+    ef_bool_t bFound = EF_BOOL_FALSE;
+    ef_object_st    xSyncObject;
+    ef_u32_t        dcl;
+    ef_u32_t        pcl;
+    ef_u32_t        tm = EF_FATTIME_GET();
+
 
     EF_LFN_BUFFER_DEFINE
 
     xDir.xObject.pxFS = pxFS;
+    /* New object to create a new chain */
+    xSyncObject.pxFS = pxFS;
 
     /* If LFN BUFFER initialization failed */
     if ( EF_RET_OK != EF_LFN_BUFFER_SET( pxFS ) )
@@ -86,32 +93,25 @@ ef_return_et eEF_dirmake (
       eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
     }
     /* Else, if following file path failed */
-    else if ( EF_RET_OK != eEFPrvPathFollow( pxPath, &xDir, &eResult ) )
+    else if ( EF_RET_OK != eEFPrvPathFollow( pxPath, &xDir, &bFound ) )
     {
       eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_INVALID_NAME );
     }
     /* If Name collision */
-    else if ( EF_RET_OK == eResult )
+    else if ( EF_BOOL_TRUE == bFound )
     {
       eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_EXIST );
     }
     /* Else, if Invalid name */
     else if (    ( 0 != EF_CONF_RELATIVE_PATH )
-              && ( EF_RET_NO_FILE == eResult )
+              && ( EF_BOOL_FALSE == bFound )
               && ( 0 != ( EF_NS_DOT & xDir.u8Name[ EF_NSFLAG ] ) ) )
     {
       eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_INVALID_NAME );
     }
-    /* Else, if it is clear to create a new directory */
-    else if ( EF_RET_NO_FILE == eResult )
+    /* Else, it is clear to create a new directory */
+    else
     {
-      ef_object_st    xSyncObject;
-      ef_u32_t        dcl;
-      ef_u32_t        pcl;
-      ef_u32_t        tm = EF_FATTIME_GET();
-
-      /* New object u16MountId to create a new chain */
-      xSyncObject.pxFS = pxFS;
       /* Allocate a cluster for the new directory */
       /* If no space to allocate a new cluster */
       if ( EF_RET_OK != eEFPrvFATChainCreate( &xSyncObject, &dcl ) )

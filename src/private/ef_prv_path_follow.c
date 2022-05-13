@@ -58,13 +58,15 @@
 ef_return_et eEFPrvPathFollow (
   const TCHAR     * pxPath,
   ef_directory_st * pxDir,
-  ef_return_et    * peResult
+  ef_bool_t       * pbFound
 )
 {
   EF_ASSERT_PRIVATE( 0 != pxPath );
   EF_ASSERT_PRIVATE( 0 != pxDir );
+  EF_ASSERT_PRIVATE( 0 != pbFound );
 
   ef_return_et  eRetVal = EF_RET_OK;
+  ef_bool_t     bFound = EF_BOOL_FALSE;
   ef_fs_st    * pxFS = pxDir->xObject.pxFS;
 
 
@@ -92,42 +94,38 @@ ef_return_et eEFPrvPathFollow (
   if ( (ef_u32_t)*pxPath < ' ' )
   {
     pxDir->u8Name[ EF_NSFLAG ] = EF_NS_NONAME;
-    eRetVal = eEFPrvDirectoryIndexSet( pxDir, 0 );
-    if ( EF_RET_OK != eRetVal ) { (void) EF_RETURN_CODE_HANDLER( eRetVal );}
+    if ( EF_RET_OK != eEFPrvDirectoryIndexSet( pxDir, 0 ) )
+    {
+      eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
+    }
+    else
+    {
+      bFound = EF_BOOL_TRUE;
+    }
   }
   else
   {
     /* Follow path */
     for ( ; ; )
     {
-      /* Get a segment name of the pxPath */
-      eRetVal = eEFPrvNameCreate( pxDir, &pxPath );
-      if ( EF_RET_OK != eRetVal )
+      ef_bool_t bFound = EF_BOOL_FALSE;
+
+      /* Get a segment name of the pxPath failed */
+      if ( EF_RET_OK != eEFPrvNameCreate( pxDir, &pxPath ) )
       {
-        (void) EF_RETURN_CODE_HANDLER( eRetVal );
+        eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_INVALID_NAME );
         break;
       }
-      ef_bool_t     bFound = EF_BOOL_FALSE;
-      /* Find an object with the segment name */
-      eRetVal = eEFPrvDirFind( pxDir, &bFound );
-      if ( EF_RET_NO_FILE == eRetVal )
+      /* Else, if finding an object with the segment name failed */
+      else if ( EF_RET_OK != eEFPrvDirFind( pxDir, &bFound ) )
       {
-        *peResult = eRetVal;
-        EF_CODE_COVERAGE( );
+        eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_INVALID_NAME );
+        break;
       }
-      else if ( EF_RET_OK == eRetVal )
+      /* Else, if Failed to find the object */
+      else if ( EF_BOOL_FALSE == bFound )
       {
-        *peResult = eRetVal;
-        EF_CODE_COVERAGE( );
-      }
-      else
-      {
-        (void) EF_RETURN_CODE_HANDLER( eRetVal );
-      }
-      ef_u08_t  ns = pxDir->u8Name[ EF_NSFLAG ];
-      /* Failed to find the object */
-      if ( EF_RET_NO_FILE == eRetVal )
-      {
+        ef_u08_t  ns = pxDir->u8Name[ EF_NSFLAG ];
         /* If dot entry is not exist, stay there */
         if (    ( 0 != EF_CONF_RELATIVE_PATH )
              && ( 0 != ( ns & EF_NS_DOT ) ) )
@@ -143,12 +141,11 @@ ef_return_et eEFPrvPathFollow (
             EF_CODE_COVERAGE( );
           }
           pxDir->u8Name[EF_NSFLAG] = EF_NS_NONAME;
-          eRetVal = EF_RET_OK;
         }
         else
         { /* Could not find the object */
           /* If not last segment */
-          if ( 0 == ( ns & EF_NS_LAST ) )
+          if ( 0 == ( EF_NS_LAST & ns ) )
           {
             /* Adjust error code */
             eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_NO_PATH );
@@ -160,14 +157,11 @@ ef_return_et eEFPrvPathFollow (
         }
         break;
       } /* Object is not found */
-      else if ( EF_RET_OK != eRetVal )
-      {
-        break;
-      }
       /* Else, if it is last segment */
-      else if ( 0 != ( ns & EF_NS_LAST ) )
+      else if ( 0 != ( EF_NS_LAST & pxDir->u8Name[ EF_NSFLAG ] ) )
       {
         /* Function completed. */
+        bFound = EF_BOOL_TRUE;
         break;
       }
       /* Else, if it is not a sub-directory */
@@ -177,19 +171,22 @@ ef_return_et eEFPrvPathFollow (
         eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_NO_PATH );
         break;
       }
+      /* Else, if Open next directory failed */
+      else if ( EF_RET_OK != eEFPrvDirectoryClusterGet( pxFS,
+                                                        pxFS->pu8Window + pxDir->u32Offset % EF_SECTOR_SIZE( pxFS ),
+                                                        &(pxDir->xObject.u32ClstStart) ) )
+      {
+        eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR);
+        break;
+      }
       else
       {
         EF_CODE_COVERAGE( );
       }
-      /* Open next directory */
-//      pxDir->xObject.u32ClstStart = eEFPrvDirectoryClusterGet( pxFS,
-//                                                              pxFS->pu8Window
-//                                                              + pxDir->u32Offset % EF_SECTOR_SIZE( pxFS ) );
-       (void) eEFPrvDirectoryClusterGet(  pxFS,
-                                          pxFS->pu8Window + pxDir->u32Offset % EF_SECTOR_SIZE( pxFS ),
-                                          &(pxDir->xObject.u32ClstStart) );
     } /* Follow path */
   }
+
+  *pbFound = bFound;
 
   return eRetVal;
 } /* eEFPrvPathFollow */

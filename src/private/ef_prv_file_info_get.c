@@ -1,6 +1,6 @@
 /**
  * ********************************************************************************************************************
- *  @file     ef_prv_file_info_get_vfat.c
+ *  @file     ef_prv_file_info_get_fat.c
  *  @ingroup  group_eFAT_Private
  *  @author   ChaN
  *  @author   Emmanuel AMADIO
@@ -55,7 +55,7 @@
 /* Public functions ------------------------------------------------------------------------------------------------ */
 
 /* Get file information from directory entry */
-ef_return_et eEFPrvDirFileInfosGetVFAT (
+ef_return_et eEFPrvDirFileInfosGet (
   ef_directory_st * pxDir,
   ef_file_info_st * pxFileInfo
 )
@@ -63,9 +63,62 @@ ef_return_et eEFPrvDirFileInfosGetVFAT (
   EF_ASSERT_PRIVATE( 0 != pxDir );
   EF_ASSERT_PRIVATE( 0 != pxFileInfo );
 
-  ef_return_et  eRetVal = EF_RET_ERROR;
-#if ( 0 != EF_CONF_VFAT )
+#if ( 0 == EF_CONF_VFAT )
+  ef_return_et  eRetVal = EF_RET_OK;
 
+  /* Invalidate file info */
+  pxFileInfo->xName[ 0 ] = 0;
+  /* If read pointer has reached end of directory */
+  if ( 0 != pxDir->xSector )
+  {
+    eRetVal = EF_RET_ERROR;
+  }
+  else
+  {
+    ef_u32_t  u32IdxDst = 0;
+    /* Copy name body and extension */
+    for ( ef_u32_t u32IdxSrc = 0 ; 11 > u32IdxSrc ; u32IdxSrc++ )
+    {
+      if ( 8 == u32IdxSrc )
+      {
+        /* Insert a . if extension is exist */
+        pxFileInfo->xName[ u32IdxDst++ ] = '.';
+      }
+      TCHAR c = (TCHAR)pxDir->pu8Dir[ u32IdxSrc ];
+      /* If a padding space */
+      if ( ' ' == c )
+      {
+        /* Skip padding space */
+        continue;
+      }
+      /* Else, if a replaced EF_DIR_DELETED_MASK character */
+      else if ( EF_DIR_REPLACEMENT_CHAR == c )
+      {
+        /* Restore replaced EF_DIR_DELETED_MASK character */
+        c = EF_DIR_DELETED_MASK;
+      }
+      else
+      {
+        EF_CODE_COVERAGE( );
+      }
+      /* Else, if a replaced EF_DIR_DELETED_MASK character */
+      pxFileInfo->xName[ u32IdxDst++ ] = c;
+    }
+    pxFileInfo->xName[ u32IdxDst ] = 0;
+
+    /* Attributes */
+    pxFileInfo->u8Attrib    = pxDir->pu8Dir[ EF_DIR_ATTRIBUTES ];
+    /* Size */
+    pxFileInfo->u32FileSize = u32EFPortLoad( pxDir->pu8Dir + EF_DIR_FILE_SIZE );
+    /* Time */
+    pxFileInfo->u16Time     = u16EFPortLoad( pxDir->pu8Dir + EF_DIR_TIME_MODIFIED + 0 );
+    /* Date */
+    pxFileInfo->u16Date     = u16EFPortLoad( pxDir->pu8Dir + EF_DIR_TIME_MODIFIED + 2 );
+  }
+
+#else
+
+  ef_return_et  eRetVal = EF_RET_ERROR;
   ef_u32_t si, di;
   ef_u08_t lcf;
   ucs2_t u16Char, hs;

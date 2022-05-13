@@ -70,9 +70,9 @@ ef_return_et eEF_rename (
   EF_ASSERT_PUBLIC( 0 != pxPath_old );
   EF_ASSERT_PUBLIC( 0 != pxPath_new );
 
-  ef_return_et      eRetVal;
-  ef_directory_st   djo;
-  ef_directory_st   djn;
+  ef_return_et      eRetVal = EF_RET_OK;
+  ef_directory_st   xDirOld;
+  ef_directory_st   xDirNew;
   ef_fs_st        * pxFS;
   ef_u08_t          buf[ EF_DIR_ENTRY_SIZE ];
   ef_u08_t        * pu8Dir;
@@ -81,42 +81,73 @@ ef_return_et eEF_rename (
 
 
   /* Snip the drive number of new name off */
-  eEFPrvVolumeNbPathRemove( &pxPath_new );
-  /* Get logical drive of the old object */
-  eRetVal = eEFPrvVolumeMountCheck( &pxPath_old, &pxFS );
-  if ( EF_RET_OK == eRetVal )
+  if ( EF_RET_OK != eEFPrvVolumeNbPathRemove( &pxPath_new ) )
   {
-    ef_return_et  eResult;
+    eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_INVALID_NAME );
+  }
+  /* Get logical drive of the old object */
+  else if ( EF_RET_OK != eEFPrvVolumeMountCheck( &pxPath_old, &pxFS ) )
+  {
+    eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_INVALID_NAME );
+  }
+  else
+  {
+    ef_bool_t bFound = EF_BOOL_FALSE;
 
-    djo.xObject.pxFS = pxFS;
-    eRetVal = EF_LFN_BUFFER_SET( pxFS );
-    eRetVal = eEFPrvPathFollow( pxPath_old, &djo, &eResult );
-    /* Check old object */
-    if (    ( EF_RET_OK == eRetVal )
-         && ( 0 != ( ( EF_NS_DOT | EF_NS_NONAME ) & djo.u8Name[ EF_NSFLAG ] ) ) )
+    xDirOld.xObject.pxFS = pxFS;
+
+    /* If LFN BUFFER initialization failed */
+    if ( EF_RET_OK != EF_LFN_BUFFER_SET( pxFS ) )
+    {
+      eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
+    }
+    /* Else, if following file path failed */
+    else if ( EF_RET_OK != eEFPrvPathFollow( pxPath_old, &xDirOld, &bFound ) )
+    {
+      eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
+    }
+    else if ( EF_BOOL_TRUE != bFound )
     {
       /* Check validity of name */
       eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_INVALID_NAME );
     }
-    if ( EF_RET_OK == eRetVal )
+    /* Check old object */
+    else if ( 0 != ( ( EF_NS_DOT | EF_NS_NONAME ) & xDirOld.u8Name[ EF_NSFLAG ] ) )
     {
-      eRetVal = eEFPrvLockCheck( &djo, 2 );
+      /* Check validity of name */
+      eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_INVALID_NAME );
+    }
+    /* Check if the file can be accessed */
+    else if ( EF_RET_OK != eEFPrvLockCheck( &xDirOld, 2 ) )
+    {
+      eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
     }
     /* Object to be renamed is found */
-    if ( EF_RET_OK == eRetVal )
+    else
+//      if ( EF_RET_OK == eRetVal )
     {
-      ef_return_et  eResult;
+      ef_bool_t bFound = EF_BOOL_FALSE;
 
       /* Save directory entry of the object */
-      eEFPortMemCopy( djo.pu8Dir, buf, EF_DIR_ENTRY_SIZE );
+      if ( EF_RET_OK != eEFPortMemCopy( xDirOld.pu8Dir, buf, EF_DIR_ENTRY_SIZE ) )
+      {
+        eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
+      }
       /* Duplicate the directory object */
-      eEFPortMemCopy( &djo, &djn, sizeof(ef_directory_st) );
+      else if ( EF_RET_OK != eEFPortMemCopy( &xDirOld, &xDirNew, sizeof(ef_directory_st) ) )
+      {
+        eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
+      }
       /* Make sure if new object name is not in use */
-      eRetVal = eEFPrvPathFollow( pxPath_new, &djn, &eResult );
-      if ( EF_RET_OK == eRetVal )
+      else if ( EF_RET_OK != eEFPrvPathFollow( pxPath_new, &xDirNew, &bFound ) )
+      {
+        /* Check validity of name */
+        eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_INVALID_NAME );
+      }
+      else if ( EF_BOOL_TRUE == bFound )
       {/* Is new name already in use by any other object? */
-        if (    ( djn.xObject.u32ClstStart == djo.xObject.u32ClstStart )
-             && ( djn.u32Offset == djo.u32Offset ) )
+        if (    ( xDirNew.xObject.u32ClstStart == xDirOld.xObject.u32ClstStart )
+             && ( xDirNew.u32Offset == xDirOld.u32Offset ) )
         {
           eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_NO_FILE );
         }
@@ -129,11 +160,11 @@ ef_return_et eEF_rename (
       if ( EF_RET_NO_FILE == eRetVal )
       {
         /* Register the new entry */
-        eRetVal = eEFPrvDirRegister( &djn );
+        eRetVal = eEFPrvDirRegister( &xDirNew );
         if ( EF_RET_OK == eRetVal )
         {
           /* Copy directory entry of the object except name */
-          pu8Dir = djn.pu8Dir;
+          pu8Dir = xDirNew.pu8Dir;
           eEFPortMemCopy( buf + 13, pu8Dir + 13, EF_DIR_ENTRY_SIZE - 13 );
           pu8Dir[ EF_DIR_ATTRIBUTES ] = buf[ EF_DIR_ATTRIBUTES ];
           if ( 0 == ( pu8Dir[ EF_DIR_ATTRIBUTES ] & EF_DIR_ATTRIB_BIT_DIRECTORY ) )
@@ -143,7 +174,7 @@ ef_return_et eEF_rename (
           }
           pxFS->u8WinFlags = EF_FS_WIN_DIRTY;
           if (    ( 0 != ( EF_DIR_ATTRIB_BIT_DIRECTORY & pu8Dir[ EF_DIR_ATTRIBUTES ] ) )
-               && ( djo.xObject.u32ClstStart != djn.xObject.u32ClstStart ) )
+               && ( xDirOld.xObject.u32ClstStart != xDirNew.xObject.u32ClstStart ) )
           {
             ef_u32_t  u32Cluster;
             if ( EF_RET_OK != eEFPrvDirectoryClusterGet(  pxFS,
@@ -166,20 +197,31 @@ ef_return_et eEF_rename (
               if (    ( EF_RET_OK == eRetVal )
                    && ( '.' == pu8Dir[ 1 ] ) )
               {
-                (void) eEFPrvDirectoryClusterSet( pxFS, pu8Dir, djn.xObject.u32ClstStart );
+                (void) eEFPrvDirectoryClusterSet( pxFS, pu8Dir, xDirNew.xObject.u32ClstStart );
                 pxFS->u8WinFlags = EF_FS_WIN_DIRTY;
               }
             }
           }
         }
       }
-      if ( EF_RET_OK == eRetVal )
+      if ( EF_RET_OK != eRetVal )
+      {
+        EF_CODE_COVERAGE( );
+      }
+      else
       {
         /* Remove old entry */
-        eRetVal = eEFPrvDirRemove( &djo );
-        if ( EF_RET_OK == eRetVal )
+        if ( EF_RET_OK != eEFPrvDirRemove( &xDirOld ) )
         {
-          eRetVal = eEFPrvFSSync( pxFS );
+          eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
+        }
+        else if ( EF_RET_OK != eEFPrvFSSync( pxFS ) )
+        {
+          eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
+        }
+        else
+        {
+          EF_CODE_COVERAGE( );
         }
       }
       /* End of the critical section */

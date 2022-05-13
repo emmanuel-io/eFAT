@@ -75,7 +75,7 @@ ef_return_et eEF_remove (
   {
     ef_directory_st   xDir;
     ef_u32_t          u32DirCluster = 0;
-    ef_return_et      eResult;
+    ef_bool_t         bFound = EF_BOOL_FALSE;
 
     EF_LFN_BUFFER_DEFINE
 
@@ -87,11 +87,11 @@ ef_return_et eEF_remove (
       eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
     }
     /* Else, if following file path failed */
-    else if ( EF_RET_OK != eEFPrvPathFollow( pxPath, &xDir, &eResult ) )
+    else if ( EF_RET_OK != eEFPrvPathFollow( pxPath, &xDir, &bFound ) )
     {
       eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_INVALID_NAME );
     }
-    else if ( EF_RET_OK != eResult )
+    else if ( EF_BOOL_TRUE != bFound )
     {
       eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_INVALID_NAME );
     }
@@ -137,29 +137,30 @@ ef_return_et eEF_remove (
       }
       else
       {
+        ef_bool_t bEmpty = EF_BOOL_FALSE;
         ef_directory_st xSubDir;
         /* Open the sub-directory */
         xSubDir.xObject.pxFS = pxFS;
         xSubDir.xObject.u32ClstStart = u32DirCluster;
-        eRetVal = eEFPrvDirectoryIndexSet( &xSubDir, 0 );
-        if ( EF_RET_OK == eRetVal )
+
+        if ( EF_RET_OK != eEFPrvDirectoryIndexSet( &xSubDir, 0 ) )
         {
-          /* Test if the directory is empty */
-          eRetVal = eEFPrvDirRead( &xSubDir );
-          /* Not empty? */
-          if ( EF_RET_OK == eRetVal )
-          {
-            eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_DENIED );
-          }
-          /* Empty? */
-          else if ( EF_RET_NO_FILE == eRetVal )
-          {
-            eRetVal = EF_RET_OK;
-          }
-          else
-          {
-            EF_CODE_COVERAGE( );
-          }
+          eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
+        }
+        /* Test if the directory is empty */
+        else if ( EF_RET_OK != eEFPrvDirRead( &xSubDir, &bEmpty ) )
+        {
+          eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
+        }
+        /* Not empty? */
+        else if ( EF_BOOL_FALSE == bEmpty )
+        {
+          eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_DENIED );
+        }
+        /* Empty? */
+        else if ( EF_BOOL_FALSE == bEmpty )
+        {
+          eRetVal = EF_RET_OK;
         }
         else
         {

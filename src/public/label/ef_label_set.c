@@ -69,6 +69,7 @@ ef_return_et eEF_label_set (
   EF_ASSERT_PUBLIC( 0 != pxLabel );
 
   ef_return_et  eRetVal = EF_RET_OK;
+  ef_bool_t     bFound = EF_BOOL_FALSE;
   ef_fs_st    * pxFS;
   ef_u08_t      u8Buffer[ 22 ];
 
@@ -227,23 +228,56 @@ ef_return_et eEF_label_set (
       {
         eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
       }
+      else if ( EF_RET_OK != eEFPrvLabelRead( &xDir, &bFound ) )
+      {
+        eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
+      }
+        /* Get volume Label entry */
+      else if ( EF_BOOL_TRUE == bFound )
+      {
+        if ( 0 != u32Index )
+        {
+          /* Change the volume pxLabel */
+          eEFPortMemCopy( u8Buffer, xDir.pu8Dir, 11 );
+        }
+        else
+        {
+          /* Remove the volume pxLabel */
+          xDir.pu8Dir[ EF_DIR_NAME_START ] = EF_DIR_DELETED_MASK;
+        }
+        pxFS->u8WinFlags = EF_FS_WIN_DIRTY;
+        if ( EF_RET_OK != eEFPrvFSSync( pxFS ) )
+        {
+          eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
+        }
+        else
+        {
+          EF_CODE_COVERAGE( );
+        }
+      }
+      /* Else, if No volume Label entry */
       else
       {
-        /* Get volume Label entry */
-        eRetVal = DIR_READ_LABEL( &xDir );
-        /* If an entry was found */
-        if ( EF_RET_OK == eRetVal )
+        /* Create a volume Label entry */
+        if ( 0 == u32Index )
         {
-          if ( 0 != u32Index )
-          {
-            /* Change the volume pxLabel */
-            eEFPortMemCopy( u8Buffer, xDir.pu8Dir, 11 );
-          }
-          else
-          {
-            /* Remove the volume pxLabel */
-            xDir.pu8Dir[ EF_DIR_NAME_START ] = EF_DIR_DELETED_MASK;
-          }
+          EF_CODE_COVERAGE( );
+        }
+        /* Else, if allocate an entry failed */
+        else if ( EF_RET_OK !=  eEFPrvDirectoryAllocate( &xDir, 1 ) )
+        {
+          eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
+        }
+        /* Else, if the entry cleaning failed */
+        else if ( EF_RET_OK !=  eEFPortMemZero( xDir.pu8Dir, EF_DIR_ENTRY_SIZE ) )
+        {
+          eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
+        }
+        else
+        {
+          /* Create volume Label entry */
+          xDir.pu8Dir[ EF_DIR_ATTRIBUTES ] = EF_DIR_ATTRIB_BIT_VOLUME_ID;
+          (void) eEFPortMemCopy( u8Buffer, xDir.pu8Dir, 11 );
           pxFS->u8WinFlags = EF_FS_WIN_DIRTY;
           if ( EF_RET_OK != eEFPrvFSSync( pxFS ) )
           {
@@ -253,45 +287,6 @@ ef_return_et eEF_label_set (
           {
             EF_CODE_COVERAGE( );
           }
-        }
-        /* Else, if No volume Label entry */
-        else if ( EF_RET_NO_FILE == eRetVal)
-        {
-          eRetVal = EF_RET_OK;
-          /* Create a volume Label entry */
-          if ( 0 == u32Index )
-          {
-            EF_CODE_COVERAGE( );
-          }
-          /* Else, if allocate an entry failed */
-          else if ( EF_RET_OK !=  eEFPrvDirectoryAllocate( &xDir, 1 ) )
-          {
-            eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
-          }
-          /* Else, if the entry cleaning failed */
-          else if ( EF_RET_OK !=  eEFPortMemZero( xDir.pu8Dir, EF_DIR_ENTRY_SIZE ) )
-          {
-            eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
-          }
-          else
-          {
-            /* Create volume Label entry */
-            xDir.pu8Dir[ EF_DIR_ATTRIBUTES ] = EF_DIR_ATTRIB_BIT_VOLUME_ID;
-            (void) eEFPortMemCopy( u8Buffer, xDir.pu8Dir, 11 );
-            pxFS->u8WinFlags = EF_FS_WIN_DIRTY;
-            if ( EF_RET_OK != eEFPrvFSSync( pxFS ) )
-            {
-              eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
-            }
-            else
-            {
-              EF_CODE_COVERAGE( );
-            }
-          }
-        }
-        else
-        {
-          EF_CODE_COVERAGE( );
         }
       }
     }

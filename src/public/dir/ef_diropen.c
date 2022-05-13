@@ -78,7 +78,7 @@ ef_return_et eEF_diropen (
   }
   else
   {
-    ef_return_et  eResult;
+    ef_bool_t bFound = EF_BOOL_FALSE;
 
     pxDir->xObject.pxFS = pxFS;
 
@@ -88,17 +88,13 @@ ef_return_et eEF_diropen (
       eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
     }
     /* Follow the pxPath to the directory */
-    else if ( EF_RET_OK != eEFPrvPathFollow( pxPath, pxDir, &eResult ) )
+    else if ( EF_RET_OK != eEFPrvPathFollow( pxPath, pxDir, &bFound ) )
     {
       eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
     }
-    else if ( EF_RET_NO_FILE == eResult )
+    else if ( EF_BOOL_TRUE != bFound )
     {
       eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_NO_PATH );
-    }
-    else if ( EF_RET_OK != eResult )
-    {
-      eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
     }
     else
     { /* Follow completed */

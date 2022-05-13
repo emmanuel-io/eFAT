@@ -92,129 +92,139 @@ ef_return_et eEF_getcwd (
     EF_LFN_BUFFER_DEFINE
 
     xDir.xObject.pxFS = pxFS;
-    eRetVal = EF_LFN_BUFFER_SET( pxFS );
 
-    /* Follow parent directories and create the pxPath */
-    i = len;      /* Bottom of pxStringer (directory stack base) */
-    /* Start to follow upper directory from current directory */
-    xDir.xObject.u32ClstStart = pxFS->u32DirClstCurrent;
-
-    /* Repeat while current directory is a sub-directory */
-    while ( 0 != ( xDir.xObject.u32ClstStart ) )
+    /* If LFN BUFFER initialization failed */
+    if ( EF_RET_OK != EF_LFN_BUFFER_SET( pxFS ) )
     {
-      /* Get parent directory */
-      eRetVal = eEFPrvDirectoryIndexSet( &xDir, 1 * EF_DIR_ENTRY_SIZE );
-      if ( EF_RET_OK != eRetVal )
+      eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
+    }
+    else
+    {
+      /* Follow parent directories and create the pxPath */
+      i = len;      /* Bottom of pxStringer (directory stack base) */
+      /* Start to follow upper directory from current directory */
+      xDir.xObject.u32ClstStart = pxFS->u32DirClstCurrent;
+
+      /* Repeat while current directory is a sub-directory */
+      while ( 0 != ( xDir.xObject.u32ClstStart ) )
       {
-        eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
-        break;
-      }
-      eRetVal = eEFPrvFSWindowLoad( pxFS, xDir.xSector );
-      if ( EF_RET_OK != eRetVal )
-      {
-        eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
-        break;
-      }
-      /* Goto parent directory */
-      //xDir.xObject.u32ClstStart = eEFPrvDirectoryClusterGet( pxFS, xDir.pu8Dir );
-      if ( EF_RET_OK != eEFPrvDirectoryClusterGet( pxFS, xDir.pu8Dir, &(xDir.xObject.u32ClstStart) ) )
-      {
-        eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_INT_ERR );
-      }
-      eRetVal = eEFPrvDirectoryIndexSet( &xDir, 0 );
-      if ( EF_RET_OK != eRetVal )
-      {
-        break;
-      }
-      do {
-        /* Find the entry links to the child directory */
-        eRetVal = eEFPrvDirRead( &xDir );
+        /* Get parent directory */
+        eRetVal = eEFPrvDirectoryIndexSet( &xDir, 1 * EF_DIR_ENTRY_SIZE );
+        if ( EF_RET_OK != eRetVal )
+        {
+          eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
+          break;
+        }
+        eRetVal = eEFPrvFSWindowLoad( pxFS, xDir.xSector );
+        if ( EF_RET_OK != eRetVal )
+        {
+          eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
+          break;
+        }
+        /* Goto parent directory */
+        //xDir.xObject.u32ClstStart = eEFPrvDirectoryClusterGet( pxFS, xDir.pu8Dir );
+        if ( EF_RET_OK != eEFPrvDirectoryClusterGet( pxFS, xDir.pu8Dir, &(xDir.xObject.u32ClstStart) ) )
+        {
+          eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_INT_ERR );
+        }
+        eRetVal = eEFPrvDirectoryIndexSet( &xDir, 0 );
         if ( EF_RET_OK != eRetVal )
         {
           break;
         }
-        else
-        {
-          ef_u32_t  u32Cluster;
-          if ( EF_RET_OK != eEFPrvDirectoryClusterGet( pxFS, xDir.pu8Dir, &u32Cluster ) )
+        do {
+          ef_bool_t bEmpty = EF_BOOL_FALSE;
+          /* Find the entry links to the child directory */
+          eRetVal = eEFPrvDirRead( &xDir, &bEmpty );
+          if ( EF_RET_OK != eRetVal )
           {
-            eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_INT_ERR );
+            break;
           }
-          //if ( ccl == eEFPrvDirectoryClusterGet( pxFS, xDir.pu8Dir ) )
-          if ( ccl == u32Cluster )
+          else
           {
-            break; /* Found the entry */
+            ef_u32_t  u32Cluster;
+            if ( EF_RET_OK != eEFPrvDirectoryClusterGet( pxFS, xDir.pu8Dir, &u32Cluster ) )
+            {
+              eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_INT_ERR );
+            }
+            //if ( ccl == eEFPrvDirectoryClusterGet( pxFS, xDir.pu8Dir ) )
+            if ( ccl == u32Cluster )
+            {
+              break; /* Found the entry */
+            }
           }
-        }
-        eRetVal = eEFPrvDirectoryIndexNext( &xDir, EF_BOOL_FALSE );
-      } while ( EF_RET_OK == eRetVal );
+          ef_bool_t     bStretched = EF_BOOL_FALSE;
+          ef_bool_t     bMoved = EF_BOOL_FALSE;
+          eRetVal = eEFPrvDirectoryIndexNext( &xDir, EF_BOOL_FALSE, &bStretched, &bMoved );
+        } while ( EF_RET_OK == eRetVal );
 
-      if  (EF_RET_NO_FILE == eRetVal )
-      {
-        /* It cannot be 'not found'. */
-        eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_INT_ERR );
-      }
-      if ( EF_RET_OK != eRetVal )
-      {
-        break;
-      }
-      /* Get the directory name and push it to the pxStringer */
-      (void) eEFPrvDirFileInfosGet( &xDir, &xFileInfo );
-      /* Name length */
-      for ( n = 0 ; xFileInfo.xName[ n ] ; n++ ) ;
-      /* Insufficient space to store the path name? */
-      if ( i < ( n + 1 ) )
-      {
-        eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_NOT_ENOUGH_CORE );
-        break;
-      }
-      while ( 0 != n )
-      {
-        /* Stack the name */
-        pxString[ --i ] = xFileInfo.xName[ --n ];
-      }
-      pxString[ --i ] = '/';
-    }
-    if ( EF_RET_OK == eRetVal )
-    {
-      if ( i == len )
-      {
-        pxString[--i] = '/';  /* Is it the root-directory? */
-      }
-      if ( EF_CONF_VOLUMES_NB >= 2 )     /* Put drive prefix */
-      {
-        ef_u32_t vl = 0;
-        /* Numeric volume ID */
-        if ( i >= 3 )
+        if  (EF_RET_NO_FILE == eRetVal )
         {
-          int8_t  s8VolumeNb;
-          (void) eEFPrvVolumeNbCurrentGet( &s8VolumeNb );
-          *pxTempString++ = (TCHAR)'A' + s8VolumeNb;
-          *pxTempString++ = (TCHAR)':';
-          vl = 2;
+          /* It cannot be 'not found'. */
+          eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_INT_ERR );
         }
-        if ( 0 == vl )
+        if ( EF_RET_OK != eRetVal )
+        {
+          break;
+        }
+        /* Get the directory name and push it to the pxStringer */
+        (void) eEFPrvDirFileInfosGet( &xDir, &xFileInfo );
+        /* Name length */
+        for ( n = 0 ; xFileInfo.xName[ n ] ; n++ ) ;
+        /* Insufficient space to store the path name? */
+        if ( i < ( n + 1 ) )
         {
           eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_NOT_ENOUGH_CORE );
+          break;
         }
-        else
+        while ( 0 != n )
+        {
+          /* Stack the name */
+          pxString[ --i ] = xFileInfo.xName[ --n ];
+        }
+        pxString[ --i ] = '/';
+      }
+      if ( EF_RET_OK == eRetVal )
+      {
+        if ( i == len )
+        {
+          pxString[--i] = '/';  /* Is it the root-directory? */
+        }
+        if ( EF_CONF_VOLUMES_NB >= 2 )     /* Put drive prefix */
+        {
+          ef_u32_t vl = 0;
+          /* Numeric volume ID */
+          if ( i >= 3 )
+          {
+            int8_t  s8VolumeNb;
+            (void) eEFPrvVolumeNbCurrentGet( &s8VolumeNb );
+            *pxTempString++ = (TCHAR)'A' + s8VolumeNb;
+            *pxTempString++ = (TCHAR)':';
+            vl = 2;
+          }
+          if ( 0 == vl )
+          {
+            eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_NOT_ENOUGH_CORE );
+          }
+          else
+          {
+            EF_CODE_COVERAGE( );
+          }
+
+        }
+        /* Add current directory pxPath */
+        if ( EF_RET_OK != eRetVal )
         {
           EF_CODE_COVERAGE( );
         }
-
-      }
-      /* Add current directory pxPath */
-      if ( EF_RET_OK != eRetVal )
-      {
-        EF_CODE_COVERAGE( );
-      }
-      else
-      {
-        do
+        else
         {
-          *pxTempString++ = pxString[ i++ ];
+          do
+          {
+            *pxTempString++ = pxString[ i++ ];
+          }
+          while ( i < len );  /* Copy stacked pxPath string */
         }
-        while ( i < len );  /* Copy stacked pxPath string */
       }
     }
     EF_LFN_BUFFER_FREE();

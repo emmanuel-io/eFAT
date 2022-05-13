@@ -57,14 +57,17 @@
 
 /* Read an object from the directory */
 ef_return_et eEFPrvDirRead (
-  ef_directory_st * pxDir
+  ef_directory_st * pxDir,
+  ef_bool_t       * pbEmpty
 )
 {
   EF_ASSERT_PRIVATE( 0 != pxDir );
+  EF_ASSERT_PRIVATE( 0 != pbEmpty );
 
 #if ( 0 == EF_CONF_VFAT )
 
   ef_return_et    eRetVal = EF_RET_OK;
+  ef_bool_t       bEmpty = EF_BOOL_FALSE;
   ef_fs_st      * pxFS    = pxDir->xObject.pxFS;
   ef_u08_t        u8Attrib;
   ef_u08_t        u8Byte;
@@ -85,7 +88,7 @@ ef_return_et eEFPrvDirRead (
     /* Reached to end of the directory */
     if ( 0 == u8Byte )
     {
-      eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_NO_FILE );
+      bEmpty = EF_BOOL_TRUE;
       break;
     }
     else
@@ -120,10 +123,17 @@ ef_return_et eEFPrvDirRead (
     {
       break;
     }
+    ef_bool_t     bStretched = EF_BOOL_FALSE;
+    ef_bool_t     bMoved = EF_BOOL_FALSE;
     /* Next entry */
-    if ( EF_RET_OK != eEFPrvDirectoryIndexNext( pxDir, EF_BOOL_FALSE ) )
+    if ( EF_RET_OK != eEFPrvDirectoryIndexNext( pxDir, EF_BOOL_FALSE, &bStretched, &bMoved ) )
     {
-      eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_NO_FILE );
+      eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
+      break;
+    }
+    else if ( EF_BOOL_TRUE == bMoved )
+    {
+      bEmpty = EF_BOOL_TRUE;
       break;
     }
     else
@@ -141,6 +151,8 @@ ef_return_et eEFPrvDirRead (
   {
     EF_CODE_COVERAGE( );
   }
+  *pbEmpty = bEmpty;
+
 
 #else
   ef_return_et eRetVal = EF_RET_NO_FILE;
@@ -264,7 +276,7 @@ ef_return_et eEFPrvDirFind (
       /* If we Reached to end of table */
       else if ( 0 == pxDir->pu8Dir[ EF_DIR_NAME_START ] )
       {
-        eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_NO_FILE );
+//        eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_NO_FILE );
         break;
       }
       else
@@ -282,13 +294,19 @@ ef_return_et eEFPrvDirFind (
         }
         else
         {
+          bFound = EF_BOOL_TRUE;
           break;
         }
+        ef_bool_t     bStretched = EF_BOOL_FALSE;
+        ef_bool_t     bMoved = EF_BOOL_FALSE;
         /* Next entry */
-        eRetVal = eEFPrvDirectoryIndexNext( pxDir, EF_BOOL_FALSE );
-        if ( EF_RET_OK != eRetVal )
+        if ( EF_RET_OK != eEFPrvDirectoryIndexNext( pxDir, EF_BOOL_FALSE, &bStretched, &bMoved ) )
         {
-          (void) EF_RETURN_CODE_HANDLER( eRetVal );
+          (void) EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
+        }
+        else if ( EF_BOOL_FALSE != bMoved )
+        {
+          break;
         }
         else
         {

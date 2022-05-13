@@ -47,8 +47,9 @@
 /* Local functions ------------------------------------------------------------------------------------------------- */
 /* Public functions ------------------------------------------------------------------------------------------------ */
 
+
 /**
- *  @brief  Get file information from directory entry (LFN)
+ *  @brief  Get file information from directory entry
  *
  *  @param  pxDir       Pointer to the directory object
  *  @param  pxFileInfo  Pointer to the file information to be filled
@@ -58,35 +59,10 @@
  *  @retval EF_RET_ERROR    An error occurred
  *  @retval EF_RET_ASSERT   Assertion failed
  */
-ef_return_et eEFPrvDirFileInfosGetVFAT (
+ef_return_et eEFPrvDirFileInfosGet (
   ef_directory_st * pxDir,
   ef_file_info_st * pxFileInfo
 );
-
-/**
- *  @brief  Get file information from directory entry (SFN)
- *
- *  @param  pxDir       Pointer to the directory object
- *  @param  pxFileInfo  Pointer to the file information to be filled
- *
- *  @return Operation result
- *  @retval EF_RET_OK       Success
- *  @retval EF_RET_ERROR    An error occurred
- *  @retval EF_RET_ASSERT   Assertion failed
- */
-ef_return_et eEFPrvDirFileInfosGetFAT (
-  ef_directory_st * pxDir,
-  ef_file_info_st * pxFileInfo
-);
-
-
-#if ( 0 != EF_CONF_VFAT )
-  /* LFN configuration */
-  #define eEFPrvDirFileInfosGet( pxDir, pxFileInfo ) eEFPrvDirFileInfosGetVFAT( pxDir, pxFileInfo )
-#else
-  /* SFN configuration */
-  #define eEFPrvDirFileInfosGet( pxDir, pxFileInfo ) eEFPrvDirFileInfosGetFAT( pxDir, pxFileInfo )
-#endif
 
 /**
  *  @brief  Write back sector in window if dirty and clear flag

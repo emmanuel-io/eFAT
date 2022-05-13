@@ -87,7 +87,7 @@ ef_return_et eEFPrvNameCreateVFAT (
     if ( 0xFFFFFFFF == uc )
     {
       /* Invalid code or UTF decode error */
-      eRetVal = EF_RET_INVALID_NAME;
+      eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_INVALID_NAME );
       break;
     }
     /* Else if it is a high surrogate */
@@ -115,7 +115,7 @@ ef_return_et eEFPrvNameCreateVFAT (
            || (    ( 0x80 > u16Char )
                 && ( EF_RET_OK == eEFPrvStringFindChar( "\"*:<>\?|\x7F", (char) u16Char ) ) ) )
       {
-        eRetVal = EF_RET_INVALID_NAME;
+        eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_INVALID_NAME );
         break;
       }
       else

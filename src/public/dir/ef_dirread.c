@@ -62,25 +62,45 @@ ef_return_et eEF_dirread (
     }
     else
     {
-      eRetVal = EF_LFN_BUFFER_SET( pxFS );
-      /* Read an item */
-      eRetVal = eEFPrvDirRead( pxDir );
-      if ( EF_RET_NO_FILE == eRetVal )
+      /* If LFN BUFFER initialization failed */
+      if ( EF_RET_OK != EF_LFN_BUFFER_SET( pxFS ) )
       {
-        /* Ignore end of directory */
-        eRetVal = EF_RET_OK;
+        eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
       }
-      /* A valid entry is found */
-      if ( EF_RET_OK == eRetVal )
+      else
       {
-        /* Get the object information */
-        (void) eEFPrvDirFileInfosGet( pxDir, pxFileInfo );
-        /* Increment index for next */
-        eRetVal = eEFPrvDirectoryIndexNext( pxDir, EF_BOOL_FALSE );
-        if ( EF_RET_NO_FILE == eRetVal )
+        ef_bool_t bEmpty = EF_BOOL_FALSE;
+        /* Read an item */
+        if ( EF_RET_OK != eEFPrvDirRead( pxDir, &bEmpty ) )
         {
-          /* Ignore end of directory now */
+          eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
+        }
+        else if ( EF_BOOL_TRUE == bEmpty )
+        {
+          /* Ignore end of directory */
           eRetVal = EF_RET_OK;
+        }
+        /* A valid entry is found */
+        else if ( EF_BOOL_FALSE == bEmpty )
+        {
+          ef_bool_t     bStretched = EF_BOOL_FALSE;
+          ef_bool_t     bMoved = EF_BOOL_FALSE;
+          /* Get the object information */
+          if ( EF_RET_OK != eEFPrvDirFileInfosGet( pxDir, pxFileInfo ) )
+          {
+            eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
+          }
+          /* Increment index for next */
+          else if ( EF_RET_OK != eEFPrvDirectoryIndexNext( pxDir, EF_BOOL_FALSE, &bStretched, &bMoved ) )
+          {
+            eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
+          }
+          eRetVal = eEFPrvDirectoryIndexNext( pxDir, EF_BOOL_FALSE, &bStretched, &bMoved );
+          if ( EF_RET_NO_FILE == eRetVal )
+          {
+            /* Ignore end of directory now */
+            eRetVal = EF_RET_OK;
+          }
         }
       }
       EF_LFN_BUFFER_FREE();

@@ -82,7 +82,8 @@
  */
 
 ef_return_et eEFPrvLabelRead (
-  ef_directory_st* pxDir
+  ef_directory_st* pxDir,
+  ef_bool_t       * pbFound
 );
 
 /* ***************************************************************************************************************** */

@@ -70,6 +70,7 @@ ef_return_et eEF_label_get (
   EF_ASSERT_PUBLIC( 0 != pxLabel );
 
   ef_return_et    eRetVal = EF_RET_OK;
+  ef_bool_t       bFound = EF_BOOL_FALSE;
   ef_fs_st      * pxFS;
 
   /* Get logical drive */
@@ -88,18 +89,18 @@ ef_return_et eEF_label_get (
     eRetVal = eEFPrvDirectoryIndexSet( &xDir, 0 );
 
     /* No Label entry and return nul string */
-    if ( EF_RET_NO_FILE == eRetVal )
-    {
-      pxLabel[ 0 ] = 0;
-      eRetVal = EF_RET_OK;
-    }
-    else if ( EF_RET_OK != eRetVal )
+    if ( EF_RET_OK != eEFPrvDirectoryIndexSet( &xDir, 0 ) )
     {
       pxLabel[ 0 ] = 0;
       eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
     }
     /* Else, if finding a volume Label entry failed */
-    else if ( EF_RET_OK != DIR_READ_LABEL( &xDir ) )
+    else if ( EF_RET_OK != eEFPrvLabelRead( &xDir, &bFound ) )
+    {
+      pxLabel[ 0 ] = 0;
+      eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
+    }
+    else if ( EF_BOOL_TRUE != bFound )
     {
       pxLabel[ 0 ] = 0;
       eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );

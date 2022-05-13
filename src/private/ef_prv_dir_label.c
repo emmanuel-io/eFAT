@@ -58,14 +58,17 @@
 
 /* Read an object from the directory */
 ef_return_et eEFPrvLabelRead (
-  ef_directory_st * pxDir
+  ef_directory_st * pxDir,
+  ef_bool_t       * pbFound
 )
 {
   EF_ASSERT_PRIVATE( 0 != pxDir );
+  EF_ASSERT_PRIVATE( 0 != pbFound );
 
 #if ( 0 == EF_CONF_VFAT )
 
   ef_return_et    eRetVal = EF_RET_OK;
+  ef_bool_t       bFound = EF_BOOL_FALSE;
   ef_fs_st      * pxFS    = pxDir->xObject.pxFS;
   ef_u08_t        u8Attrib;
   ef_u08_t        u8EntryType;
@@ -77,13 +80,21 @@ ef_return_et eEFPrvLabelRead (
       eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
       break;
     }
+    else
+    {
+      EF_CODE_COVERAGE( );
+    }
     /* Test for the entry type */
     u8EntryType = pxDir->pu8Dir[ EF_DIR_NAME_START ];
     /* Reached to end of the directory */
     if ( 0 == u8EntryType )
     {
-      eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_NO_FILE );
+      /* Simply not found, no error */
       break;
+    }
+    else
+    {
+      EF_CODE_COVERAGE( );
     }
     /* Get attribute */
     u8Attrib = pxDir->pu8Dir[ EF_DIR_ATTRIBUTES ] & EF_DIR_ATTRIB_BITS_DEFINED;
@@ -110,10 +121,17 @@ ef_return_et eEFPrvLabelRead (
       /* Label directory entry found */
       break;
     }
+    ef_bool_t     bStretched = EF_BOOL_FALSE;
+    ef_bool_t     bMoved = EF_BOOL_FALSE;
     /* Next entry */
-    if ( EF_RET_OK != eEFPrvDirectoryIndexNext( pxDir, EF_BOOL_FALSE ) )
+    if ( EF_RET_OK != eEFPrvDirectoryIndexNext( pxDir, EF_BOOL_FALSE, &bStretched, &bMoved ) )
     {
-      eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_NO_FILE );
+      eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
+      break;
+    }
+    else if ( EF_BOOL_FALSE != bMoved )
+    {
+      /* Simply not found, no error */
       break;
     }
     else

@@ -138,8 +138,10 @@ ef_return_et eEFPrvDirectoryClusterSet
  *  @retval EF_RET_DENIED               Access denied due to prohibited access or directory full
  */
 ef_return_et eEFPrvDirectoryIndexNext (
-    ef_directory_st * pxDir,
-    ef_bool_t         bStretch
+  ef_directory_st * pxDir,
+  ef_bool_t         bStretch,
+  ef_bool_t       * pbStretched,
+  ef_bool_t       * pbMoved
 );
 
 /**

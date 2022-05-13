@@ -107,7 +107,7 @@ ef_return_et eEFPortSyncObjectTake (
   }
   else
   {
-    eRetVal = EF_RET_ERROR;
+    eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
   }
   return eRetVal;
 }
@@ -133,7 +133,7 @@ ef_return_et eEFPortSyncObjectGive (
   }
   else
   {
-    eRetVal = EF_RET_ERROR;
+    eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_ERROR );
   }
   return eRetVal;
 }

@@ -277,15 +277,21 @@ ef_return_et eEFPrvDirectoryIndexSet (
 /* Directory handling - Move directory table index next */
 ef_return_et eEFPrvDirectoryIndexNext (
   ef_directory_st * pxDir,
-  ef_bool_t         bStretch
+  ef_bool_t         bStretch,
+  ef_bool_t       * pbStretched,
+  ef_bool_t       * pbMoved
 )
 {
   EF_ASSERT_PRIVATE( 0 != pxDir );
+  EF_ASSERT_PRIVATE( 0 != pbStretched );
+  EF_ASSERT_PRIVATE( 0 != pbMoved );
 
   ef_return_et  eRetVal = EF_RET_OK;
   ef_u32_t      u32Offset;
   ef_u32_t      u32Cluster;
   ef_fs_st    * pxFS = pxDir->xObject.pxFS;
+  ef_bool_t     bStretched = EF_BOOL_FALSE;
+  ef_bool_t     bMoved = EF_BOOL_FALSE;
 
 
   /* Next entry */
@@ -298,7 +304,7 @@ ef_return_et eEFPrvDirectoryIndexNext (
       /* Disable it */
       pxDir->xSector = 0;
       /* Report EOT */
-      eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_NO_FILE );
+//      eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_NO_FILE );
   }
   /* Else, if the sector did not change */
   else if ( 0 != ( u32Offset % EF_SECTOR_SIZE( pxFS ) ) )
@@ -320,7 +326,7 @@ ef_return_et eEFPrvDirectoryIndexNext (
       {
         /* Report EOT */
         pxDir->xSector = 0;
-        eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_NO_FILE );
+//        eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_NO_FILE );
       }
       else
       {
@@ -354,7 +360,7 @@ ef_return_et eEFPrvDirectoryIndexNext (
       {
         /* Report EOT */
         pxDir->xSector = 0;
-        eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_NO_FILE );
+//        eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_NO_FILE );
       }
       /* Else, if stretching the FAT Chain failed / allocating a new cluster */
       else if ( EF_RET_OK != eEFPrvFATChainStretch( &pxDir->xObject, pxDir->u32Clst, &u32Cluster ) )
@@ -369,6 +375,9 @@ ef_return_et eEFPrvDirectoryIndexNext (
       else
       {
         /* No problems */
+        bStretched = EF_BOOL_TRUE;
+        bMoved = EF_BOOL_TRUE;
+
         EF_CODE_COVERAGE( );
       }
 
@@ -404,6 +413,9 @@ ef_return_et eEFPrvDirectoryIndexNext (
 
   }
 
+  *pbStretched = bStretched;
+  *pbMoved = bMoved;
+
   return eRetVal;
 }
 
@@ -427,6 +439,9 @@ ef_return_et eEFPrvDirectoryAllocate (
     ef_u32_t u32FreeEntriesCount = 0;
     do
     {
+
+      ef_bool_t     bStretched = EF_BOOL_FALSE;
+      ef_bool_t     bMoved = EF_BOOL_FALSE;
 
       if ( EF_RET_OK != eEFPrvFSWindowLoad( pxFS, pxDir->xSector ) )
       {
@@ -452,7 +467,7 @@ ef_return_et eEFPrvDirectoryAllocate (
         break;  /* A block of contiguous free entries is found */
       }
       /* Keep searching */
-      else if ( EF_RET_OK != eEFPrvDirectoryIndexNext( pxDir, EF_BOOL_TRUE ) )
+      else if ( EF_RET_OK != eEFPrvDirectoryIndexNext( pxDir, EF_BOOL_TRUE, &bStretched, &bMoved ) )
       {
         /* Reached to end */
         eRetVal = EF_RETURN_CODE_HANDLER( EF_RET_FAT_ERROR );
