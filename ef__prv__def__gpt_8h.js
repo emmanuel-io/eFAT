@@ -1,0 +1,25 @@
+var ef__prv__def__gpt_8h =
+[
+    [ "EF_GPT_HEADER_OFFSET_DISK_GUID", "group__group_d_e_f_i_n_e___g_p_t.html#gac4b7217da7820a2aaa9638ac9df43736", null ],
+    [ "EF_GPT_HEADER_OFFSET_HEADER_CRC32", "group__group_d_e_f_i_n_e___g_p_t.html#ga4015c17518357b9908fab4cec72201f0", null ],
+    [ "EF_GPT_HEADER_OFFSET_HEADER_LBA_BACKUP", "group__group_d_e_f_i_n_e___g_p_t.html#gaddb6dad2ae088dce278c5adcf2eb7785", null ],
+    [ "EF_GPT_HEADER_OFFSET_HEADER_LBA_CURRENT", "group__group_d_e_f_i_n_e___g_p_t.html#ga57a198acffa0715bc90761a642bdcc7c", null ],
+    [ "EF_GPT_HEADER_OFFSET_HEADER_SIZE", "group__group_d_e_f_i_n_e___g_p_t.html#ga040a3f72bf2325158231f86c8008d276", null ],
+    [ "EF_GPT_HEADER_OFFSET_HEADER_ZERO", "group__group_d_e_f_i_n_e___g_p_t.html#ga7fbdeaa386bef2ed86a515e39e798ab9", null ],
+    [ "EF_GPT_HEADER_OFFSET_PADDING", "group__group_d_e_f_i_n_e___g_p_t.html#ga59f58d1683e529515eff1b3704510311", null ],
+    [ "EF_GPT_HEADER_OFFSET_PARTITIONS_LBA_FIRST", "group__group_d_e_f_i_n_e___g_p_t.html#gad15ec0e77412e422c96085ddca91218a", null ],
+    [ "EF_GPT_HEADER_OFFSET_PARTITIONS_LBA_LAST", "group__group_d_e_f_i_n_e___g_p_t.html#ga4713edcab310f189db4420d525d299c3", null ],
+    [ "EF_GPT_HEADER_OFFSET_PTE_ARRAY_CRC32", "group__group_d_e_f_i_n_e___g_p_t.html#ga7f9f602c5fdecadeafbe989a20441a5c", null ],
+    [ "EF_GPT_HEADER_OFFSET_PTE_LBA_START", "group__group_d_e_f_i_n_e___g_p_t.html#ga24fb8b193fdab948f0e660b296218d10", null ],
+    [ "EF_GPT_HEADER_OFFSET_PTE_NB", "group__group_d_e_f_i_n_e___g_p_t.html#ga33ce3b8ebb766a7c2b49ffa6e0669d90", null ],
+    [ "EF_GPT_HEADER_OFFSET_PTE_SIZE", "group__group_d_e_f_i_n_e___g_p_t.html#ga61a500c1dd61153f51d5b15137d8c4af", null ],
+    [ "EF_GPT_HEADER_OFFSET_REVISION", "group__group_d_e_f_i_n_e___g_p_t.html#gabff07eaad065ec5e8f6b8a3fa6ac6725", null ],
+    [ "EF_GPT_HEADER_OFFSET_SIGNATURE", "group__group_d_e_f_i_n_e___g_p_t.html#gaedaf9066542210e6996e99afa1cd1b9d", null ],
+    [ "EF_GPT_PTE_OFFSET_ATTRIBUTE_FLAGS", "group__group_d_e_f_i_n_e___g_p_t.html#ga6b9b249453fa99d863a20a727e974f93", null ],
+    [ "EF_GPT_PTE_OFFSET_LBA_FIRST", "group__group_d_e_f_i_n_e___g_p_t.html#ga3f9bcf2f3d0d7b1d5d29e3e7d04ef854", null ],
+    [ "EF_GPT_PTE_OFFSET_LBA_LAST", "group__group_d_e_f_i_n_e___g_p_t.html#gac195420b9f2f8f024f6f097fbab35bec", null ],
+    [ "EF_GPT_PTE_OFFSET_PARTITION_NAME", "group__group_d_e_f_i_n_e___g_p_t.html#ga9741576f42a4ffb1daef526b165ed48f", null ],
+    [ "EF_GPT_PTE_OFFSET_TYPE_GUID", "group__group_d_e_f_i_n_e___g_p_t.html#ga01b12cc8f660ab16ff0226b351eeb327", null ],
+    [ "EF_GPT_PTE_OFFSET_UNIQUE_GUID", "group__group_d_e_f_i_n_e___g_p_t.html#ga2fe73251c46410102deae115ff18a8b2", null ],
+    [ "EF_GPT_PTE_SIZE", "group__group_d_e_f_i_n_e___g_p_t.html#gad1e459946cde531ef6aaeac68cbdd445", null ]
+];

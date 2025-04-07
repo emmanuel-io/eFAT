@@ -1,0 +1,13 @@
+digraph "eFAT Unicode support"
+{
+ // LATEX_PDF_SIZE
+  bgcolor="transparent";
+  edge [fontname=Helvetica,fontsize=10,labelfontname=Helvetica,labelfontsize=10];
+  node [fontname=Helvetica,fontsize=10,shape=box,height=0.2,width=0.4];
+  rankdir=LR;
+  Node3 [id="Node000003",label="eFAT Double Bytes Character Sets",height=0.2,width=0.4,color="grey40", fillcolor="white", style="filled",URL="$group___groupe_f_a_t_c_p_d_b_c_s.html",tooltip=" "];
+  Node1 [id="Node000001",label="eFAT Unicode support",height=0.2,width=0.4,color="gray40", fillcolor="grey60", style="filled", fontcolor="black",tooltip=" "];
+  Node2 [id="Node000002",label="eFAT Private",height=0.2,width=0.4,color="grey40", fillcolor="white", style="filled",URL="$group__group__e_f_a_t___private.html",tooltip=" "];
+  Node1->Node2 [shape=plaintext, label="ef_prv_def_cp.h\nef_prv_def_cp932.h\nef_prv_def_cp936.h\nef_prv_def_cp949.h\nef_prv_def_cp950.h\nef_prv_def_cp_upcase.h", color="darkgreen", dir="none", style="dashed"];
+  Node1->Node3 [shape=plaintext, label="ef_prv_def_cp932.h\nef_prv_def_cp936.h\nef_prv_def_cp949.h\nef_prv_def_cp950.h", color="darkgreen", dir="none", style="dashed"];
+}

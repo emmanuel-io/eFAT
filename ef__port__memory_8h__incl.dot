@@ -1,0 +1,25 @@
+digraph "inc/portable/ef_port_memory.h"
+{
+ // LATEX_PDF_SIZE
+  bgcolor="transparent";
+  edge [fontname=Helvetica,fontsize=10,labelfontname=Helvetica,labelfontsize=10];
+  node [fontname=Helvetica,fontsize=10,shape=box,height=0.2,width=0.4];
+  Node1 [id="Node000001",label="inc/portable/ef_port\l_memory.h",height=0.2,width=0.4,color="gray40", fillcolor="grey60", style="filled", fontcolor="black",tooltip="Header for portable memory fills & compare functions."];
+  Node1 -> Node2 [id="edge1_Node000001_Node000002",color="steelblue1",style="solid",tooltip=" "];
+  Node2 [id="Node000002",label="ef_prv_def.h",height=0.2,width=0.4,color="grey40", fillcolor="white", style="filled",URL="$ef__prv__def_8h.html",tooltip="Private definitions."];
+  Node2 -> Node3 [id="edge2_Node000002_Node000003",color="steelblue1",style="solid",tooltip=" "];
+  Node3 [id="Node000003",label="efat.h",height=0.2,width=0.4,color="grey40", fillcolor="white", style="filled",URL="$efat_8h.html",tooltip="Header file for eFAT module."];
+  Node3 -> Node4 [id="edge3_Node000003_Node000004",color="steelblue1",style="solid",tooltip=" "];
+  Node4 [id="Node000004",label="ef_def.h",height=0.2,width=0.4,color="grey40", fillcolor="white", style="filled",URL="$ef__def_8h.html",tooltip="Public definitions for eFAT."];
+  Node4 -> Node5 [id="edge4_Node000004_Node000005",color="steelblue1",style="solid",tooltip=" "];
+  Node5 [id="Node000005",label="ef_conf.h",height=0.2,width=0.4,color="grey40", fillcolor="white", style="filled",URL="$ef__conf_8h.html",tooltip="Header file for eFAT module configuration."];
+  Node4 -> Node6 [id="edge5_Node000004_Node000006",color="steelblue1",style="solid",tooltip=" "];
+  Node6 [id="Node000006",label="ef_port_types.h",height=0.2,width=0.4,color="grey40", fillcolor="white", style="filled",URL="$ef__port__types_8h.html",tooltip="Header file for types definitions."];
+  Node6 -> Node5 [id="edge6_Node000006_Node000005",color="steelblue1",style="solid",tooltip=" "];
+  Node3 -> Node5 [id="edge7_Node000003_Node000005",color="steelblue1",style="solid",tooltip=" "];
+  Node3 -> Node6 [id="edge8_Node000003_Node000006",color="steelblue1",style="solid",tooltip=" "];
+  Node3 -> Node7 [id="edge9_Node000003_Node000007",color="steelblue1",style="solid",tooltip=" "];
+  Node7 [id="Node000007",label="ef_port_system.h",height=0.2,width=0.4,color="grey40", fillcolor="white", style="filled",URL="$ef__port__system_8h.html",tooltip="Header file for portable system functions."];
+  Node7 -> Node4 [id="edge10_Node000007_Node000004",color="steelblue1",style="solid",tooltip=" "];
+  Node1 -> Node6 [id="edge11_Node000001_Node000006",color="steelblue1",style="solid",tooltip=" "];
+}

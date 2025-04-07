@@ -1,0 +1,11 @@
+digraph "Extended Bios Parameter Block for FAT12/16"
+{
+ // LATEX_PDF_SIZE
+  bgcolor="transparent";
+  edge [fontname=Helvetica,fontsize=10,labelfontname=Helvetica,labelfontsize=10];
+  node [fontname=Helvetica,fontsize=10,shape=box,height=0.2,width=0.4];
+  rankdir=LR;
+  Node2 [id="Node000002",label="Bios Parameter Block\l for FAT12/16/32",height=0.2,width=0.4,color="grey40", fillcolor="white", style="filled",URL="$group__group_d_e_f_i_n_e___b_s___b_p_b___f_a_t.html",tooltip=" "];
+  Node1 [id="Node000001",label="Extended Bios Parameter\l Block for FAT12/16",height=0.2,width=0.4,color="gray40", fillcolor="grey60", style="filled", fontcolor="black",tooltip=" "];
+  Node2->Node1 [shape=plaintext, dir="back", style="solid"];
+}
